@@ -1,11 +1,12 @@
+from __future__ import division
+
 import libtcodpy as libtcod
 import game
 import objects
 import utilities
 import monsters
 import random
-Game = game.Game
-from test1 import game_instance
+from test1 import game_instance, Game
 
 def debug(func):
 	def _inner(*a,**kw):
@@ -128,6 +129,42 @@ class LightningBolt(Item):
 			game.message('No target')
 		return result
 
+@Game.register_item_type(5)
+class Jump(Item):
+	name = 'Jump'
+	char = 'j'
+	color= libtcod.dark_green
+	jump_distance = 3
+	def use(self):
+		game_instance.select(self.jump)
+		return True
+	def jump(self, x,y):
+		dist = self.user.distance(x,y)
+
+		if dist <= self.jump_distance:
+			self.user.x, self.user.y = x,y
+			game.message('you are transported to a new place')
+		elif random.random() < self.jump_distance/dist:
+			self.user.x, self.user.y = x,y
+			game.message('you strain all your power to move %d squares' % int(dist))
+		else:
+			game.message('you didn\'t make it')
+			self.user.fighter.take_damage( int(round(2 * dist/self.jump_distance)) )
+
+@Game.register_item_type(3)
+class Acquire(Item):
+	name = 'Acquire'
+	char = 'a'
+	color= libtcod.dark_green
+	effect_distance = 5
+	def use(self):
+		game.message('what do you want?')
+		game_instance.select(self.get)
+		return True
+	def get(self, x,y):
+		if self.user.distance(x,y) < self.effect_distance:
+			self.user.pick_up(self.user.object_at(x,y))
+
 
 @Game.register_item_type(1)
 class Smite(Item):
@@ -144,9 +181,11 @@ class Smite(Item):
 			monster.fighter.take_damage(10)
 			if monster.fighter:
 				game.message('%s is smitten, he only retains %s hp' % (monster.name, monster.fighter.hp))
+			else:
+				game.message('%s thought it better to go elsewhere' % monster.name)
 
 
-@Game.register_item_type(5)
+@Game.register_item_type(2)
 class Fireball(Item):
 	name = 'Fireball'
 	char = '*'
@@ -158,6 +197,9 @@ class Fireball(Item):
 		return True
 
 	def smite(self, x,y):
+		if random.random() < .1:
+			self.effect_radius *= 2
+
 		strikes = []
 		for obj in self.owner.level.objects:
 			if obj.fighter and obj is not self.user:

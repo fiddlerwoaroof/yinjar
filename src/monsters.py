@@ -1,8 +1,9 @@
 import random
-from game import Game
+from test1 import Game
 import game
 import objects
 import libtcodpy as libtcod
+import items
 
 from test1 import game_instance
 
@@ -16,12 +17,43 @@ class BasicMonster(Monster):
 			if monster.distance_to(game_instance.player) > 1:
 				dx,dy = monster.move_towards(game_instance.player.x, game_instance.player.y)
 				counter = 0
-				while (dx,dy) == (0,0): # wiggle around if stuck
+				while (dx,dy) == (0,0) and counter < 10: # wiggle around if stuck
 					counter += 1
 					dx,dy = monster.move(random.randrange(-1,2,2), random.randrange(-1,2,2))
 				print 'wiggled %s times' % counter
 			elif game_instance.player.fighter.hp > 0:
 				monster.fighter.attack(game_instance.player)
+
+class AdvancedMonster(Monster):
+	def perimeter(self, rect):
+		for dx,row in enumerate(rect, -1):
+			for dy, cell in enumerate(row, -1):
+				if (dx in {-1,1}) or (dy in {-1,1}):
+					yield dx,dy, cell
+	def take_turn(self):
+		monster = self.owner
+		if not game_instance.player.can_see(monster.x, monster.y):
+			return
+		elif monster.distance_to(game_instance.player) > 1:
+			x,y = monster.x, monster.y
+			player_x, player_y = game_instance.player.pos
+			neighborhood = [ [0,0,0], [0,0,0], [0,0,0] ]
+			for dx in range(-1,2):
+				for dy in range(-1,2):
+					new_x = x+dx
+					new_y = y+dy
+					neighborhood[dx+1][dy+1] += int(monster.level.is_blocked(x+dx, y+dy))
+			dx, dy = monster.get_step_towards(player_x, player_y)
+			if neighborhood[dx+1][dy+1]:
+				open = []
+				for dx,dy, cell in self.perimeter(neighborhood):
+					if not cell:
+						open.append( (dx,dy) )
+				open = sorted(open, key=lambda (a,b): abs(a-dx)+abs(b-dy))[:3]
+				dx,dy = random.choice(open)
+			monster.move(dx,dy)
+		else:
+			monster.fighter.attack(game_instance.player)
 
 
 class ConfusedMonster(Monster):
@@ -77,15 +109,13 @@ get_visible_monsters = functools.partial(game_instance.player.get_visible_object
 
 #####
 
-from game import Game
-
 Game.register_monster_type(
 	lambda map,level, con,x,y: objects.Object(map, con,
 		x,y, '\x02', '%s the Orc' % libtcod.namegen_generate('Fantasy male'),
 			libtcod.blue, True,
 
 		fighter=objects.Fighter(hp=10, defense=2, power=3, death_function=monster_death),
-		ai=BasicMonster(),
+		ai=AdvancedMonster(),
 		level=level
 ), 8)
 
@@ -95,7 +125,7 @@ Game.register_monster_type(
 			libtcod.orange, True,
 
 		fighter=objects.Fighter(hp=16, defense=1, power=4, death_function=monster_death),
-		ai=BasicMonster(),
+		ai=AdvancedMonster(),
 		level=level
 ), 2)
 
@@ -105,8 +135,8 @@ Game.register_monster_type(
 			libtcod.amber, True,
 
 		fighter=objects.Fighter(hp=16, defense=1, power=7, death_function=monster_death),
-		ai=BasicMonster(),
+		ai=AdvancedMonster(),
 		level=level
 ), 1)
-Game.register_monster_type(None, 8)
+Game.register_monster_type(None, 7)
 

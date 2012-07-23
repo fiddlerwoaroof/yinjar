@@ -10,6 +10,13 @@ class Rect:
 		self.y2 = y + h
 
 	@property
+	def width(self):
+		return abs(self.x2-self.x1)
+	@property
+	def height(self):
+		return abs(self.y2-self.y1)
+
+	@property
 	def center(self):
 		return (self.x1+self.x2)/2, (self.y1+self.y2)/2
 
@@ -20,6 +27,11 @@ class Rect:
 			libtcod.random_get_int(0, self.y1+1, self.y2-1)
 		)
 
+	def iter_cells(self):
+		for x in range(self.x1+1, self.x2):
+			for y in range(self.y1+1, self.y2):
+				yield x,y
+
 	def intersect(self, other):
 		return (
 			(self.x1 <= other.x2 and self.x2 >= other.x1)
@@ -27,6 +39,15 @@ class Rect:
 			(self.y1 <= other.y2 and self.y2 >= other.y1)
 		)
 	__xor__ = intersect
+
+	def __contains__(self, point):
+		x,y = point
+		return (
+			(self.x1 <= x <= self.x2)
+				and
+			(self.y1 <= y <= self.y2)
+		)
+
 
 def render_bar(panel, x,y, total_width, name, value, maximum, bar_color, back_color):
 	bar_width = int(float(value) / maximum * total_width)
@@ -54,3 +75,40 @@ def message(game_msgs, num_msgs, width, new_msg, color=libtcod.white):
 			del game_msgs[0]
 		game_msgs.append( (line, color) )
 
+class MovementKeyListener(object):
+	def __init__(self):
+		self.up_cb = None
+		self.down_cb = None
+		self.right_cb = None
+		self.left_cb = None
+		self.handlers = {}
+		self.char_handlers = {}
+
+	def __call__(self, key, *a, **kw):
+		result = None
+		if key.vk in self.handlers:
+			result = self.handlers[key.vk](*a, **kw) or True
+		elif key.c in self.char_handlers:
+			result = self.char_handlers[key.c](*a, **kw) or True
+		return (key, result)
+
+	def handle(self, key):
+		def _inner(func):
+			self.handlers[key] = func
+			return self
+		if hasattr(key, 'upper'):
+			key = ord(key)
+			def _inner(func):
+				self.char_handlers[key] = func
+				return self
+
+		return _inner
+
+	def up(self, func):
+		return self.handle(libtcod.KEY_UP)(func)
+	def down(self, func):
+		return self.handle(libtcod.KEY_DOWN)(func)
+	def left(self, func):
+		return self.handle(libtcod.KEY_LEFT)(func)
+	def right(self, func):
+		return self.handle(libtcod.KEY_RIGHT)(func)
