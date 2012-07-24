@@ -1,11 +1,11 @@
 import random
-from test1 import Game
+from main import Game
 import game
 import objects
 import libtcodpy as libtcod
 import items
 
-from test1 import game_instance
+from main import game_instance
 
 class Monster(object):
 	def take_turn(self): pass
@@ -108,6 +108,54 @@ get_visible_monsters = functools.partial(game_instance.player.get_visible_object
 
 
 #####
+
+import yaml
+import os.path
+import glob
+import monsters
+class MonsterLoader(object):
+	def __init__(self, dir):
+		self.dir = dir
+
+	def load_monsters(self):
+		for fn in glob.glob(os.path.join(self.dir,'*.yml')):
+			print 'fn', fn
+			for doc in yaml.safe_load_all(file(fn)):
+				self.load_monster(doc)
+
+	def load_monster(self, doc):
+		color = doc.get('color', None)
+		if color is None:
+			color = libtcod.red
+		elif hasattr(color, 'upper'):
+			color = getattr(libtcod, color)
+		else:
+			color = libtcod.Color(*color)
+
+		ai_class = doc.get('ai_class', BasicMonster)
+		if ai_class is not BasicMonster:
+			module, clas = ai_class.rsplit('.',1)
+			module = __import__(module)
+			ai_class = getattr(module, clas)
+
+		print 'loading', doc
+		Game.register_monster_type(
+			(lambda doc:
+				lambda map,level,con,x,y: objects.Object( map, con, x,y,
+					doc['char'],
+					doc.get('name_fmt', '%s the %s') % (libtcod.namegen_generate(doc['namegen_class']).capitalize(), doc['race_name'].capitalize()),
+					color,
+					True,
+					fighter=objects.Fighter(
+						hp=doc['hp'],
+						defense=doc['defense'],
+						power=doc['power'],
+						death_function=monster_death
+					),
+					ai=ai_class(),
+					level=level
+				)
+			)(doc), doc['spawn_chance'])
 
 Game.register_monster_type(
 	lambda map,level, con,x,y: objects.Object(map, con,

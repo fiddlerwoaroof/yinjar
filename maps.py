@@ -379,10 +379,13 @@ class Map(collections.MutableSequence):
 		num_monsters = random.randrange(1, max_num)
 		for i in range(num_monsters):
 			choice = choose_obj(monster_types)
+			print 'chosen monster: %s' % choice,
 			if choice:
 				x,y = self.choose_empty_point(room)
 				if x is not None and y is not None:
-					choice(self, self.level, self.con, x,y)
+					result = choice(self, self.level, self.con, x,y)
+					print result.name, result.fighter.hp, result.fighter.power, result.fighter.defense, x,y,
+			print
 
 
 	def place_items(self, room, item_types, max_num):

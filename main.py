@@ -1,16 +1,17 @@
+import os.path
 import textwrap
 import math
 import libtcodpy as libtcod
+import glob
 libtcod.console_set_keyboard_repeat(500, 50)
-libtcod.namegen_parse('../data/namegen/jice_norse.cfg')
-libtcod.namegen_parse('../data/namegen/jice_fantasy.cfg')
-libtcod.namegen_parse('../data/namegen/jice_celtic.cfg')
+for file in glob.glob('./data/namegen/*.cfg'):
+	libtcod.namegen_parse(file)
 
 from game import GameBase
 import levels
 import objects
 import utilities
-if __name__ == 'test1':
+if __name__ == 'main':
 	class Game(GameBase):
 		#actual size of the window
 		SCREEN_WIDTH, SCREEN_HEIGHT = 155, 90
@@ -43,13 +44,17 @@ if __name__ == 'test1':
 
 			self.panel = libtcod.console_new(self.SCREEN_WIDTH, self.PANEL_HEIGHT)
 
-			self.levels = [levels.Level(self.MAP_WIDTH, self.MAP_HEIGHT, self.con, self.item_types, self.monster_types)]
+			self.levels = []
+
 			self.current_level = 0
+			self.levels = [levels.Level(self.MAP_WIDTH, self.MAP_HEIGHT, self.con, self.item_types, self.monster_types)]
 
 			x,y = None,None
 			self.player = objects.Player(self.level.map, self.con, x,y, '@', libtcod.white,
 				fighter=objects.Fighter(hp=20, defense = 2, power = 10, death_function=self.player_death)
-			).enter_level(self.level)
+			)
+
+
 
 		def player_death(self, player):
 			utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, 'You died!')
@@ -58,6 +63,9 @@ if __name__ == 'test1':
 			player.color = libtcod.dark_red
 
 		def setup_map(self):
+			print self.monster_types
+			self.player.enter_level(self.level)
+
 			self.level.setup(self.MAX_ROOMS,
 				self.ROOM_MIN_SIZE, self.ROOM_MAX_SIZE,
 				self.MAX_ROOM_MONSTERS, self.MAX_ROOM_ITEMS
@@ -275,9 +283,11 @@ if __name__ == 'test1':
 			libtcod.console_blit(self.panel, 0,0, self.SCREEN_WIDTH,self.PANEL_HEIGHT, 0,0, self.PANEL_Y)
 
 	game_instance = Game()
+	from monsters import MonsterLoader
+
 
 if __name__ == '__main__':
-	from test1 import game_instance
+	from main import game_instance
 	from items import *
 	from utilities import *
 	from maps import *
@@ -287,6 +297,9 @@ if __name__ == '__main__':
 
 	from functools import partial
 	render_bar = partial(render_bar, game_instance.panel)
+
+	a = MonsterLoader(os.path.join('.','data','monsters'))
+	a.load_monsters()
 
 	game_instance.setup_map()
 	game_instance.main()

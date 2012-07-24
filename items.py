@@ -6,7 +6,7 @@ import objects
 import utilities
 import monsters
 import random
-from test1 import game_instance, Game
+from main import game_instance, Game
 
 
 class Item(object):

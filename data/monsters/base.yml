@@ -1,0 +1,40 @@
+---
+race_name: "Human Warrior"
+namegen_class: "male"
+char: "h"
+color: amber
+
+spawn_chance: 4
+    
+hp: 10
+defense: 1
+power: 5
+     
+ai_class: monsters.AdvancedMonster
+         
+---
+race_name: "Imp"
+namegen_class: "male"
+char: "i"
+color: dark_red
+
+spawn_chance: 7
+    
+hp: 4
+defense: 0
+power: 4
+     
+---
+race_name: "Troll Fighter"
+namegen_class: "demon male"
+char: "%"
+color: darker_yellow
+
+spawn_chance: 1
+    
+hp: 17
+defense: 2
+power: 5
+     
+ai_class: monsters.AdvancedMonster
+         
