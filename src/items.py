@@ -8,25 +8,10 @@ import monsters
 import random
 from test1 import game_instance, Game
 
-def debug(func):
-	def _inner(*a,**kw):
-		try:
-			result = func(*a,**kw)
-		except Exception, e:
-			result = 'raised %s' % e
-			raise
-		else:
-			result = 'returned %s' % result
-		finally:
-			print '%s args:%s kwargs:%s finished and %s' % (func,a,kw,result)
-		return result
-	return _inner
-
 
 class Item(object):
 	def __new__(*args):
 		res = object.__new__(*args)
-		res.use = debug(res.use)
 		return res
 
 @Game.register_item_type(5)

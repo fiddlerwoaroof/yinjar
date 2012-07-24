@@ -196,7 +196,7 @@ if __name__ == 'test1':
 		def mvkeyhandler(self):
 			chosen_item = self.inventory_menu('Choose the item to drop:')
 			if chosen_item is not None:
-				self.player.drop(chosen_item)
+				self.player.drop(chosen_item.owner)
 
 		@mvkeyhandler.handle('g')
 		def mvkeyhandler(self):

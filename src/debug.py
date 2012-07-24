@@ -21,3 +21,17 @@ def _get_last_module(num=1, exclude_modules={'debug'}):
 		result = result[0]
 	return result
 
+def debug(func):
+	def _inner(*a,**kw):
+		try:
+			result = func(*a,**kw)
+		except Exception, e:
+			result = 'raised %s' % e
+			raise
+		else:
+			result = 'returned %s' % result
+		finally:
+			print '%s args:%s kwargs:%s finished and %s' % (func,a,kw,result)
+		return result
+	return _inner
+
