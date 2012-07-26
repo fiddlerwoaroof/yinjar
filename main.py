@@ -57,7 +57,7 @@ if __name__ == 'main':
 
 
 		def player_death(self, player):
-			utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, 'You died!')
+			self.message('You died!', libtcod.red)
 			self.game_state = 'dead'
 			player.char = '%'
 			player.color = libtcod.dark_red
@@ -82,7 +82,7 @@ if __name__ == 'main':
 		def register_item_type(cls, chance):
 			def _inner(typ):
 				cls.item_types[typ] = chance
-				return cls
+				return typ
 			return _inner
 
 
@@ -90,6 +90,7 @@ if __name__ == 'main':
 		@classmethod
 		def register_monster_type(cls, typ, chance):
 			cls.monster_types[typ] = chance
+			return typ
 
 		@property
 		def level(self):
@@ -198,6 +199,7 @@ if __name__ == 'main':
 		def mvkeyhandler(self):
 			item = self.inventory_menu('choose item\n')
 			if item is not None:
+				item.bind_game(self)
 				self.player.use(item)
 
 		@mvkeyhandler.handle('d')
@@ -298,8 +300,11 @@ if __name__ == '__main__':
 	from functools import partial
 	render_bar = partial(render_bar, game_instance.panel)
 
-	a = MonsterLoader(os.path.join('.','data','monsters'))
-	a.load_monsters()
+	ml = MonsterLoader(os.path.join('.','data','monsters'))
+	ml.load_monsters()
+
+	il = ItemLoader(os.path.join('.','data','items'))
+	il.load_items()
 
 	game_instance.setup_map()
 	game_instance.main()

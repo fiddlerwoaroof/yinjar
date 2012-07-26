@@ -11,6 +11,91 @@ def get_pos_pair(x,y):
 			x,y = x.pos
 	return x,y
 
+import collections
+class Slot(object):
+	def __init__(self):
+		self.limit = None
+		self.items = []
+
+	@property
+	def display_name(self):
+		if self.items != []:
+			return '%s (x%s)' % (self.items[0].name, len(self.items))
+
+	@property
+	def ident(self):
+		if self.items != []:
+			return self.items[0].name
+
+
+	def empty(self):
+		return len(self.items) == 0
+
+	def _add_item(self, item):
+		self.items.append(item)
+		return True
+
+	def add_item(self, item):
+		result = False
+		if self.limit is None or len(self.items) <= self.limit:
+			if self.items == []:
+				self.limit = item.item.stack_limit
+				print 'no items'
+				return self._add_item(item)
+			elif (len(self.items) < self.limit) and (self.ident == item.name):
+				print 'add_items %d' % len(self.items)
+				return self._add_item(item)
+			elif self.ident != item.name:
+				raise ValueError('Cannot stack %s with %s' % (self.ident, item.ident))
+		return result
+
+	def get_item(self, default=None):
+		result = default
+		if self.items != []:
+			result = self.items[-1]
+		return result
+
+	def consume(self):
+		self.items.pop()
+
+
+
+class Inventory(object):
+	def __init__(self):
+		self.objects = {}
+
+	def __iter__(self):
+		for v in self.objects.itervalues():
+			for i in v:
+				yield i
+
+	def __len__(self):
+		return sum(len(x) for x in self.objects.values())
+
+	def __contains__(self, it):
+		return it.ident in self.objects
+
+	def __getitem__(self, k):
+		return self.objects[k][-1].get_item()
+
+	def __setitem__(self, k,v):
+		if v.ident != k: raise ValueError('Inventory key must equal the item\'s name')
+		self.add_item(v)
+
+	def add_item(self, item):
+		slot = self.objects.setdefault(item.name, [Slot()])
+		while not slot[-1].add_item(item):
+			print 'add slot'
+			slot.append(Slot())
+
+	def __delitem__(self, k):
+		self.objects[k][-1].consume()
+		while self.objects[k] != [] and self.objects[k][-1].empty():
+			self.objects[k].pop()
+		else:
+			if self.objects[k] == []:
+				del self.objects[k]
+
 class Player(Object):
 	def triggers_recompute(func):
 		def _inner(self, *a, **kw):
@@ -25,7 +110,7 @@ class Player(Object):
 		)
 
 		map.player = self
-		self.inventory = []
+		self.inventory = Inventory()
 
 	def draw(self, player=None):
 		if player is None:
@@ -35,36 +120,34 @@ class Player(Object):
 	def pick_up(self, obj):
 		if len(self.inventory) >= 26:
 			game.message('Your inventory is full, cannot pick up %s' % obj.name, libtcod.red)
-		else:
-			self.inventory.append(
-				self.level.claim_object(obj)
+		elif obj is not None:
+			self.inventory.add_item(
+				self.level.claim_object(obj).item.bind_user(self) # returns item.owner
 			)
 			game.message('you picked up a %s!' % obj.name, libtcod.green)
-			obj.item.user = self
 		return self
 
 	def drop(self, obj):
-		self.level.objects.insert(0, obj)
+		obj = self.inventory[obj.name]
 		obj.x, obj.y = self.x, self.y
-		game.message('you dropped a %s' % obj.name, libtcod.yellow)
+		self.level.add_object(obj)
+		del self.inventory[obj.name]
 
 	def use(self, item):
 		item.owner.enter_level(self.level)
 		success = item.use()
 
-		try:
-			index = self.inventory.index(item.owner)
-		except ValueError:
-			index = -1
+		if success:
+			del self.inventory[item.name]
 
-		if success and index != -1:
-			self.inventory.pop(index)
 
 	def get_item(self, index):
 		return self.inventory[index].item
 
 	def get_item_names(self):
-		return [item.name for item in self.inventory]
+		return [item.display_name for item in self.inventory]
+	def get_items(self):
+		return [item for item in self.inventory]
 
 	def tick(self):
 		if self.fighter:

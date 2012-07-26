@@ -86,8 +86,8 @@ class Level(object):
 				cell.explored = True
 
 			color = libtcod.black
-			#if True:
-			if cell.explored:
+			if True:
+			#if cell.explored:
 				wall = cell.block_sight
 				walkable = not cell.blocked
 
