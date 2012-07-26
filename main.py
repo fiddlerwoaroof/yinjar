@@ -300,6 +300,19 @@ if __name__ == 'main':
 
 			libtcod.console_blit(self.panel, 0,0, self.SCREEN_WIDTH,self.PANEL_HEIGHT, 0,0, self.PANEL_Y)
 
+		def main_menu(self):
+			message = (
+				'Welcome to YinJAR: is not Just Another Roguelike (WIP)',
+				'',
+				'Choose an option:',
+				'',
+			)
+
+			options = ['Play', 'Exit']
+			return options[
+				self.menu('\n'.join(message), options, len(message[0]))
+			]
+
 	game_instance = Game()
 	from monsters import MonsterLoader
 
@@ -322,6 +335,8 @@ if __name__ == '__main__':
 	il = ItemLoader(os.path.join('.','data','items'))
 	il.load_items()
 
-	game_instance.setup_map()
-	game_instance.main()
+	action = game_instance.main_menu()
+	if action.lower() == 'play':
+		game_instance.setup_map()
+		game_instance.main()
 
