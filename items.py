@@ -13,10 +13,9 @@ from main import Game
 
 
 class Item(object):
+	stack_limit = 5
 	def __init__(self, stackable=False):
-		self.stackable = stackable
 		self.stacks_with = []
-		self.stack_limit = 5
 
 	def __new__(*args):
 		res = object.__new__(*args)
@@ -61,6 +60,8 @@ class ItemLoader(object):
 			name = doc.get('item_description')
 			char = doc.get('char', '!')
 			color = _color
+			stack_limit = doc.get('stack_limit', Item.stack_limit)
+			stacks_with = doc.get('stacks_with', ())
 
 
 @Game.register_item_type(5)
