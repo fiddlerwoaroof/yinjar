@@ -155,7 +155,7 @@ class GameBase:
 	def inventory_menu(self, header):
 		data = [(item.display_name, item.ident) for item in self.player.get_items()]
 		display = [x[0] for x in data]
-		index = self.menu(self.con, header, display, self.INVENTORY_WIDTH)
+		index = self.menu(header, display, self.INVENTORY_WIDTH)
 
 		if index is not None:
 			return self.player.get_item(data[index][1])
@@ -174,11 +174,12 @@ class GameBase:
 
 
 
-	def menu(self, con, header, options, width):
+	def menu(self, header, options, width):
+		if self.con is None: self.con = 0
 		if len(options) > 26: raise ValueError('too many items')
 
+		con = self.con
 
-		print con
 		header_height = libtcod.console_get_height_rect(con, 0,0, width, self.SCREEN_HEIGHT, header)
 		height = len(options) + header_height
 		window = libtcod.console_new(width, height)

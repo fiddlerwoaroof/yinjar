@@ -7,6 +7,18 @@ libtcod.console_set_keyboard_repeat(500, 50)
 for file in glob.glob('./data/namegen/*.cfg'):
 	libtcod.namegen_parse(file)
 
+help = '''
+ 'i': Inventory
+ 'd': Drop
+ 'g': Get item (Pick up)
+ '?': Help
+ Alt+Escape: Exit
+
+ Arrow Keys for movement / selecting
+ Name of item under the mouse shown
+ above the health bar
+'''
+
 from game import GameBase
 import levels
 import objects
@@ -221,6 +233,10 @@ if __name__ == 'main':
 		@mvkeyhandler.handle('>')
 		def mvkeyhandler(self):
 			self.change_level(down=True)
+
+		@mvkeyhandler.handle('?')
+		def mvkeyhandler(self):
+			self.menu(help, [], 50)
 
 		selectkeyhandler = utilities.MovementKeyListener()
 		@selectkeyhandler.up
