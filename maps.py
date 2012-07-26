@@ -151,6 +151,7 @@ class MazeGen(AutomataEngine):
 
 			cx, cy = point
 			lx, ty = cx-left_offset, cy-up_offset
+
 			if lx < 0:
 				max_width += lx
 				lx = 0
@@ -160,10 +161,11 @@ class MazeGen(AutomataEngine):
 			w, h = random.randrange(1,max_width+1), random.randrange(1, max_height+1)
 
 			if lx + w >= self.width:
-				lx -= (lx+w) - self.width
+				w -= (lx+w) - self.width
 			if ty + h >= self.height:
-				ty -= (ty+h) - self.height
+				h -= (ty+h) - self.height
 
+			print '(',lx,ty, ')', w, h
 			room = Rect(lx,ty, w,h)
 			success = True
 			for o_room in self.rooms:
