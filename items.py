@@ -224,7 +224,7 @@ class Fireball(Item):
 	name = 'Fireball'
 	char = '*'
 	color = libtcod.darker_red
-	effect_radius = 3
+	effect_radius = 5
 
 	def use(self):
 		self.game.select(self.smite)
