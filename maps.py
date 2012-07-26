@@ -216,6 +216,14 @@ class Smoother(AutomataEngine):
 		else:
 			return cell
 
+class NewSmoother(AutomataEngine):
+	def rule(self, x,y, cell):
+		avg = self.sum_area( (x,y), 2 ) / 16
+		if avg < .5:
+			return 0
+		else:
+			return 1
+
 import collections
 class Map(collections.MutableSequence):
 	def __init__(self, width, height, con, level):
@@ -258,7 +266,7 @@ class Map(collections.MutableSequence):
 	def __getitem__(self, k):
 		return self.data[k]
 	def __setitem__(self, k,v):
-		return self.data[k][v]
+		self.data[k] = v
 	def __delitem__(self, k):
 		del self.data[k]
 
