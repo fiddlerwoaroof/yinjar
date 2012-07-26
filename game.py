@@ -51,8 +51,11 @@ class GameBase:
 	color_light_ground = libtcod.Color(200,200,200)
 
 
-	def message(self, msg, color):
-		utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, msg, color)
+	def message(self, msg, color=None):
+		if color is not None:
+			utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, msg, color)
+		else:
+			utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, msg)
 
 	def __init__(self, app_name='test app', screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT):
 		print '__init__'
@@ -150,10 +153,12 @@ class GameBase:
 		libtcod.console_blit(self.panel, 0,0, self.SCREEN_WIDTH,self.PANEL_HEIGHT, 0,0, self.PANEL_Y)
 
 	def inventory_menu(self, header):
-		index = self.menu(self.con, header, self.player.get_item_names(), self.INVENTORY_WIDTH)
+		data = [(item.display_name, item.ident) for item in self.player.get_items()]
+		display = [x[0] for x in data]
+		index = self.menu(self.con, header, display, self.INVENTORY_WIDTH)
 
 		if index is not None:
-			return self.player.get_item(index)
+			return self.player.get_item(data[index][1])
 
 	def get_names_under_mouse(self):
 		x,y = self.mouse.cx, self.mouse.cy

@@ -143,7 +143,10 @@ class MonsterLoader(object):
 			(lambda doc:
 				lambda map,level,con,x,y: objects.Object( map, con, x,y,
 					doc['char'],
-					doc.get('name_fmt', '%s the %s') % (libtcod.namegen_generate(doc['namegen_class']).capitalize(), doc['race_name'].capitalize()),
+					doc.get('name_fmt', '%s the %s') % (
+						libtcod.namegen_generate(doc['namegen_class']).capitalize(),
+						doc['race_name'].capitalize()
+					),
 					color,
 					True,
 					fighter=objects.Fighter(

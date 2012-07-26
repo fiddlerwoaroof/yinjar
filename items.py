@@ -1,4 +1,7 @@
 from __future__ import division
+import os.path
+import glob
+import yaml
 
 import libtcodpy as libtcod
 import game
@@ -6,13 +9,59 @@ import objects
 import utilities
 import monsters
 import random
-from main import game_instance, Game
+from main import Game
 
 
 class Item(object):
+	def __init__(self, stackable=False):
+		self.stackable = stackable
+		self.stacks_with = []
+		self.stack_limit = 5
+
 	def __new__(*args):
 		res = object.__new__(*args)
 		return res
+	def bind_game(self, game):
+		self.game = game
+	def bind_user(self, user):
+		self.user = user
+		return self.owner
+	def free_user(self):
+		self.user = None
+		return self.owner
+
+class ItemLoader(object):
+	def __init__(self, dir):
+		self.dir = dir
+
+	def load_items(self):
+		for fn in glob.glob(os.path.join(self.dir,'*.yml')):
+			print 'fn', fn
+			for doc in yaml.safe_load_all(file(fn)):
+				self.load_item(doc)
+
+	def load_item(self, doc):
+		_color = doc.get('color', None)
+		if _color is None:
+			_color = libtcod.green
+		elif hasattr(_color, 'upper'):
+			_color = getattr(libtcod, _color)
+		else:
+			_color = libtcod.Color(*_color)
+
+		item_class = doc['item_class']
+		module, clas = item_class.rsplit('.',1)
+		module = __import__(module)
+		item_class = getattr(module, clas)
+		print 'item class:', item_class
+
+		print 'loading', doc
+		@Game.register_item_type(doc['spawn_chance'])
+		class LoadedItem(item_class):
+			name = doc.get('item_description')
+			char = doc.get('char', '!')
+			color = _color
+
 
 @Game.register_item_type(5)
 class HealingPotion(Item):
@@ -24,10 +73,10 @@ class HealingPotion(Item):
 
 		result = True
 		if fighter.hp == fighter.max_hp:
-			game.message('You\'re full, can\'t heal', libtcod.red)
+			self.game.message('You\'re full, can\'t heal', libtcod.red)
 			result = False
 		else:
-			game.message('Healing...')
+			self.game.message('Healing...')
 			fighter.heal(10)
 
 		return result
@@ -54,7 +103,7 @@ class Confusion(Item):
 
 		result = False
 		if monster is not None:
-			game.message('%s becomes confused' % monster.name)
+			self.game.message('%s becomes confused' % monster.name)
 			monsters.ConfusedMonster(random.randrange(10,18)).attach(
 				monster
 			)
@@ -69,13 +118,13 @@ class Strengthen(Item):
 	color = libtcod.chartreuse
 	def use(self):
 		if self.user.fighter:
-			game.message('%s feels a surge of strength' % self.user.name)
+			self.game.message('%s feels a surge of strength' % self.user.name)
 			self.user.fighter.stat_adjust(20, self.adj)
 		return True
 
 	def adj(self, owner):
 		return (
-			lambda _: game.message('The surge of strength has subsided'),
+			lambda _: self.game.message('The surge of strength has subsided'),
 			owner.fighter.defense,
 			owner.fighter.power+3
 		)
@@ -87,13 +136,13 @@ class Protect(Item):
 	color = libtcod.chartreuse
 	def use(self):
 		if self.user.fighter:
-			game.message('%s is surrounded by a protecting aura' % self.user.name)
-			self.user.fighter.stat_adjust(10, self.adj)
+			self.game.message('%s is surrounded by a protecting aura' % self.user.name)
+			self.user.fighter.stat_adjust(15, self.adj)
 		return True
 
 	def adj(self, owner):
 		return (
-			lambda _: game.message('The protecting aura dissipates'),
+			lambda _: self.game.message('The protecting aura dissipates'),
 			owner.fighter.defense+6,
 			owner.fighter.power
 		)
@@ -107,11 +156,11 @@ class LightningBolt(Item):
 		monster = monsters.get_closest_monster(self.user)
 		result = False
 		if monster and self.user.can_see(monster.x, monster.y):
-			game.message('Monster %s has been struck by lightning' % monster.name)
+			self.game.message('Monster %s has been struck by lightning' % monster.name)
 			monster.fighter.take_damage(13)
 			result = True
 		else:
-			game.message('No target')
+			self.game.message('No target')
 		return result
 
 @Game.register_item_type(5)
@@ -121,19 +170,19 @@ class Jump(Item):
 	color= libtcod.dark_green
 	jump_distance = 3
 	def use(self):
-		game_instance.select(self.jump)
+		self.game.select(self.jump)
 		return True
 	def jump(self, x,y):
 		dist = self.user.distance(x,y)
 
 		if dist <= self.jump_distance:
 			self.user.x, self.user.y = x,y
-			game.message('you are transported to a new place')
+			self.game.message('you are transported to a new place')
 		elif random.random() < self.jump_distance/dist:
 			self.user.x, self.user.y = x,y
-			game.message('you strain all your power to move %d squares' % int(dist))
+			self.game.message('you strain all your power to move %d squares' % int(dist))
 		else:
-			game.message('you didn\'t make it')
+			self.game.message('you didn\'t make it')
 			self.user.fighter.take_damage( int(round(2 * dist/self.jump_distance)) )
 
 @Game.register_item_type(3)
@@ -143,8 +192,8 @@ class Acquire(Item):
 	color= libtcod.dark_green
 	effect_distance = 5
 	def use(self):
-		game.message('what do you want?')
-		game_instance.select(self.get)
+		self.game.message('what do you want?')
+		self.game.select(self.get)
 		return True
 	def get(self, x,y):
 		if self.user.distance(x,y) < self.effect_distance:
@@ -157,7 +206,7 @@ class Smite(Item):
 	char = '\x0f'
 	color = libtcod.red
 	def use(self):
-		game_instance.select(self.smite)
+		self.game.select(self.smite)
 		return True
 
 	def smite(self, x,y):
@@ -165,9 +214,9 @@ class Smite(Item):
 		if monster:
 			monster.fighter.take_damage(10)
 			if monster.fighter:
-				game.message('%s is smitten, he only retains %s hp' % (monster.name, monster.fighter.hp))
+				self.game.message('%s is smitten, he only retains %s hp' % (monster.name, monster.fighter.hp))
 			else:
-				game.message('%s thought it better to go elsewhere' % monster.name)
+				self.game.message('%s thought it better to go elsewhere' % monster.name)
 
 
 @Game.register_item_type(2)
@@ -178,7 +227,7 @@ class Fireball(Item):
 	effect_radius = 3
 
 	def use(self):
-		game_instance.select(self.smite)
+		self.game.select(self.smite)
 		return True
 
 	def smite(self, x,y):
@@ -189,7 +238,7 @@ class Fireball(Item):
 		for obj in self.owner.level.objects:
 			if obj.fighter and obj is not self.user:
 				if (obj.x, obj.y) == (x,y):
-					game.message('%s takes a direct hit from the fireball' % obj.name)
+					self.game.message('%s takes a direct hit from the fireball' % obj.name)
 					obj.fighter.take_damage(20)
 				elif obj.distance(x,y) < self.effect_radius:
 					obj.fighter.take_damage(6)
@@ -197,5 +246,5 @@ class Fireball(Item):
 						strikes.append('%s %s' % (obj.name, obj.fighter.hp))
 					else:
 						strikes.append('%s dead' % obj.name)
-		game.message('The names of those who were to close for comfort: %s' % ', '.join(strikes))
+		self.game.message('The names of those who were to close for comfort: %s' % ', '.join(strikes))
 

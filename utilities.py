@@ -90,6 +90,8 @@ class MovementKeyListener(object):
 			result = self.handlers[key.vk](*a, **kw) or True
 		elif key.c in self.char_handlers:
 			result = self.char_handlers[key.c](*a, **kw) or True
+		if result is None:
+			result = 'didnt-take-turn'
 		return (key, result)
 
 	def handle(self, key):
