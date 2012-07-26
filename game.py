@@ -21,51 +21,22 @@ class Cursor(object):
 		libtcod.console_put_char(self.con, self.x,self.y, ' ', libtcod.BKGND_NONE)
 
 class GameBase:
-	#actual size of the window
-	SCREEN_WIDTH, SCREEN_HEIGHT = 50,70
-
-	MAP_WIDTH, MAP_HEIGHT = SCREEN_WIDTH, SCREEN_HEIGHT - 17
-
-	INVENTORY_WIDTH = 50
-	BAR_WIDTH = 25
-
-	PANEL_HEIGHT = SCREEN_HEIGHT - MAP_HEIGHT - 2
-	PANEL_Y = SCREEN_HEIGHT - PANEL_HEIGHT
-
-	MSG_X = BAR_WIDTH + 2
-	MSG_WIDTH, MSG_HEIGHT = SCREEN_WIDTH - BAR_WIDTH - 2, PANEL_HEIGHT - 1
-
-	ROOM_MIN_SIZE, ROOM_MAX_SIZE = 7, 19
-
-	MAX_ROOMS = 51
-
-	MAX_ROOM_MONSTERS, MAX_ROOM_ITEMS = 9, 6
-
-	CONFUSE_NUM_TURNS = 17
-
-	LIMIT_FPS = 20	#20 frames-per-second maximum
-
-	color_dark_wall = libtcod.Color(60, 60, 60)
-	color_light_wall = libtcod.Color(127,127,127)
-	color_dark_ground = libtcod.Color(150,150,150)
-	color_light_ground = libtcod.Color(200,200,200)
-
-
 	def message(self, msg, color=None):
-		if color is not None:
-			utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, msg, color)
-		else:
-			utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, msg)
+		if color is None:
+			color = libtcod.white
+		utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, msg)
 
-	def __init__(self, app_name='test app', screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT):
+	def __init__(self, app_name='test app', screen_width=None, screen_height=None):
 		print '__init__'
+		if screen_width is None:
+			screen_width, screen_height = self.SCREEN_WIDTH, self.SCREEN_HEIGHT
 		libtcod.console_init_root(
 			screen_width, screen_height, app_name, False
 		)
 
 		self.game_msgs = []
 		global message
-		message = functools.partial(utilities.message, self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH)
+		message = self.message
 
 		self.game_state = 'playing'
 		self.player_action = 'didnt-take-turn'
@@ -136,20 +107,6 @@ class GameBase:
 		libtcod.console_set_default_background(self.panel, libtcod.black)
 		libtcod.console_clear(self.panel)
 
-		#utilities.render_bar(self.panel, 1,1, self.BAR_WIDTH, 'HP',
-		#	self.player.fighter.hp,
-		#	self.player.fighter.max_hp,
-		#	libtcod.red,
-		#	libtcod.darker_red
-		#)
-
-		#y = 1
-		#for line, color in self.game_msgs:
-		#	libtcod.console_set_default_foreground(self.panel, color)
-		#	libtcod.console_print_ex(self.panel, self.MSG_X, y, libtcod.BKGND_NONE, libtcod.LEFT, line)
-		#	y += 1
-
-
 		libtcod.console_blit(self.panel, 0,0, self.SCREEN_WIDTH,self.PANEL_HEIGHT, 0,0, self.PANEL_Y)
 
 	def inventory_menu(self, header):
@@ -174,7 +131,7 @@ class GameBase:
 
 
 
-	def menu(self, header, options, width):
+	def menu(self, header, options, width, back_color=libtcod.black, fore_color=libtcod.white):
 		if self.con is None: self.con = 0
 		if len(options) > 26: raise ValueError('too many items')
 
@@ -184,7 +141,7 @@ class GameBase:
 		height = len(options) + header_height
 		window = libtcod.console_new(width, height)
 
-		libtcod.console_set_default_foreground(window, libtcod.white)
+		libtcod.console_set_default_foreground(window, fore_color)
 		libtcod.console_print_rect(window, 0,0, width,height, header)
 
 		y = header_height

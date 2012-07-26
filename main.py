@@ -1,11 +1,12 @@
 import os.path
+import yaml
 import textwrap
 import math
 import libtcodpy as libtcod
 import glob
 libtcod.console_set_keyboard_repeat(500, 50)
-for file in glob.glob('./data/namegen/*.cfg'):
-	libtcod.namegen_parse(file)
+for fil in glob.glob('./data/namegen/*.cfg'):
+	libtcod.namegen_parse(fil)
 
 help = '''
  'i': Inventory
@@ -24,32 +25,72 @@ import levels
 import objects
 import utilities
 if __name__ == 'main':
+	class Null: pass
+	class SettingsObject(object):
+		def __init__(self, setting_name, default=Null):
+			self.setting_name = setting_name
+			self.default = default
+
+		def __get__(self, instance, owner):
+			result = instance.settings.get(self.setting_name, self.default)
+			if result is Null:
+				raise KeyError('%s is not specified in the configuration' % self.setting_name)
+			return result
+
 	class Game(GameBase):
 		#actual size of the window
-		SCREEN_WIDTH, SCREEN_HEIGHT = 155, 90
+		def load_settings(self):
+			self.settings = yaml.safe_load(
+				file(os.path.join('./data/main.yml'))
+			)
+			if self.settings == None:
+				self.settings = {}
+			print self.settings
 
-		MAP_WIDTH, MAP_HEIGHT = SCREEN_WIDTH, SCREEN_HEIGHT - 17
+		SCREEN_WIDTH = SettingsObject('screen_width', 80)
+		SCREEN_HEIGHT = SettingsObject('screen_height', 50)
+
+		PANEL_HEIGHT = 15
 
 		INVENTORY_WIDTH = 50
+
+		@property
+		def MAP_WIDTH(self):
+			return self.SCREEN_WIDTH
+		@property
+		def MAP_HEIGHT(self):
+			return self.SCREEN_HEIGHT - (self.PANEL_HEIGHT + 2)
+
+
 		BAR_WIDTH = 25
-
-		PANEL_HEIGHT = SCREEN_HEIGHT - MAP_HEIGHT - 2
-		PANEL_Y = SCREEN_HEIGHT - PANEL_HEIGHT
-
 		MSG_X = BAR_WIDTH + 2
-		MSG_WIDTH, MSG_HEIGHT = SCREEN_WIDTH - BAR_WIDTH - 2, PANEL_HEIGHT - 1
+		MSG_HEIGHT = PANEL_HEIGHT
 
-		ROOM_MIN_SIZE, ROOM_MAX_SIZE = 7, 19
+		@property
+		def PANEL_Y(self):
+			return self.SCREEN_HEIGHT - self.PANEL_HEIGHT
 
-		MAX_ROOMS = 51
+		@property
+		def MSG_WIDTH(self):
+			return self.SCREEN_WIDTH - self.MSG_X
 
-		MAX_ROOM_MONSTERS, MAX_ROOM_ITEMS = 9, 6
+		@property
+		def MSG_HEIGHT(self):
+			return self.PANEL_HEIGHT - 1
+
+		ROOM_MIN_SIZE = SettingsObject('room_min_wall_length', 4)
+		ROOM_MAX_SIZE = SettingsObject('room_max_wall_length', 7)
+
+		MAX_ROOMS = SettingsObject('max_number_rooms', 10)
+		MAX_ROOM_MONSTERS = SettingsObject('max_number_room_monsters', 6)
+		MAX_ROOM_ITEMS = SettingsObject('max_number_room_items', 3)
 
 		CONFUSE_NUM_TURNS = 17
 
 		LIMIT_FPS = 20	#20 frames-per-second maximum
 
 		def __init__(self):
+			self.load_settings()
 			GameBase.__init__(self, 'caer flinding', self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
 
 			self.select_cb = None
@@ -335,6 +376,7 @@ if __name__ == '__main__':
 	il = ItemLoader(os.path.join('.','data','items'))
 	il.load_items()
 
+	game_instance.load_settings()
 	action = game_instance.main_menu()
 	if action.lower() == 'play':
 		game_instance.setup_map()
