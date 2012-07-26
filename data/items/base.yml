@@ -1,8 +1,1 @@
 ---
-color: darker_violet
-char: '\x04'
-item_name: 'xxx'
-item_description: 'XXX'
-char: "\x04"
-item_class: items.HealingPotion
-spawn_chance: 9
