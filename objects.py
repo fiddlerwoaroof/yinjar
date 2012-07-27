@@ -4,6 +4,7 @@ import libtcodpy as libtcod
 import maps
 
 class Object(object):
+	# FIXME: map argument unused, remove
 	def __init__(self, map, con, x,y, char, name, color, blocks=False, level=None, fighter=None, ai=None, item=None):
 		self.name = name
 		self.x, self.y = x,y
