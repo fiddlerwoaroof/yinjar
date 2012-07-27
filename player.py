@@ -1,5 +1,7 @@
+import contextlib
 import libtcodpy as libtcod
 from objects import Object, Fighter
+import mods
 
 def get_pos_pair(x,y):
 	if y is None:
@@ -83,6 +85,7 @@ class Inventory(object):
 		self.add_item(v)
 
 	def add_item(self, item):
+		print 'add_item', item.name
 		slot = self.objects.setdefault(item.name, [Slot()])
 		while not slot[-1].add_item(item):
 			print 'add slot'
@@ -111,6 +114,13 @@ class Player(Object):
 
 		map.player = self
 		self.inventory = Inventory()
+		self.mods = Inventory()
+
+		class Item:
+			stack_limit = 5
+		obj = Object(None, con, None,None, 'b', 'boost', color, item=Item())
+		obj.mod = mods.Boost()
+		self.mods.add_item(obj)
 
 	def draw(self, player=None):
 		if player is None:
@@ -141,10 +151,34 @@ class Player(Object):
 		if success:
 			del self.inventory[item.name]
 
+	@contextlib.contextmanager
+	def recategorize_item(self, item_name):
+		item = self.inventory[item_name]
+		yield item
+		del self.inventory[item_name]
+		self.inventory.add_item(item)
+
+	def modify(self, item_name, mod_name):
+		mod = self.mods[mod_name]
+		with self.recategorize_item(item_name) as item:
+			item.item.modify(mod.mod)
+			del self.mods[mod_name]
+		print list(self.mods)
+
+	def unmodify(self, item_name, mod_name):
+		with self.recategorize_item(item_name) as item:
+			item.item.unmodify(mod_name)
+		print list(self.mods)
+
+	def get_mod(self, index):
+		return self.mods[index].mod
+	def get_mod_names(self):
+		return [item.display_name for item in self.mods]
+	def get_mods(self):
+		return [item for item in self.mods]
 
 	def get_item(self, index):
 		return self.inventory[index].item
-
 	def get_item_names(self):
 		return [item.display_name for item in self.inventory]
 	def get_items(self):

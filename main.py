@@ -250,16 +250,33 @@ if __name__ == 'main':
 
 		@mvkeyhandler.handle('i')
 		def mvkeyhandler(self):
-			item = self.inventory_menu('choose item\n')
+			item = self.inventory_menu('Choose item to use\n')
 			if item is not None:
 				item.bind_game(self)
 				self.player.use(item)
 
 		@mvkeyhandler.handle('d')
 		def mvkeyhandler(self):
-			chosen_item = self.inventory_menu('Choose the item to drop:')
+			chosen_item = self.inventory_menu('Choose item to drop\n')
 			if chosen_item is not None:
 				self.player.drop(chosen_item.owner)
+
+		@mvkeyhandler.handle('n')
+		def mvkeyhandler(self):
+			chosen_item = self.inventory_menu('Choose item to unmod\n')
+			if chosen_item is not None:
+				data = chosen_item.mods.keys()
+				index = self.menu('Choose \nmod to \nundo\n', data, self.INVENTORY_WIDTH)
+				if index is not None:
+					self.player.unmodify(chosen_item.name, data[index])
+
+		@mvkeyhandler.handle('m')
+		def mvkeyhandler(self):
+			chosen_item = self.inventory_menu('Choose item to mod\n')
+			if chosen_item is not None:
+				chosen_mod = self.mod_menu('Choose mod to apply\n')
+				if chosen_mod is not None:
+					self.player.modify(chosen_item.name, chosen_mod.name)
 
 		@mvkeyhandler.handle('g')
 		def mvkeyhandler(self):

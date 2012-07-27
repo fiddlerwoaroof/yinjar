@@ -109,13 +109,21 @@ class GameBase:
 
 		libtcod.console_blit(self.panel, 0,0, self.SCREEN_WIDTH,self.PANEL_HEIGHT, 0,0, self.PANEL_Y)
 
-	def inventory_menu(self, header):
-		data = [(item.display_name, item.ident) for item in self.player.get_items()]
+	def Inventory_menu(self, header, items):
+		data = [(item.display_name, item.ident) for item in items]
 		display = [x[0] for x in data]
 		index = self.menu(header, display, self.INVENTORY_WIDTH)
+		return index, data
 
+	def inventory_menu(self, header):
+		index, data = self.Inventory_menu(header, self.player.get_items())
 		if index is not None:
 			return self.player.get_item(data[index][1])
+
+	def mod_menu(self, header):
+		index, data = self.Inventory_menu(header, self.player.get_mods())
+		if index is not None:
+			return self.player.get_mod(data[index][1])
 
 	def get_names_under_mouse(self):
 		x,y = self.mouse.cx, self.mouse.cy
@@ -132,6 +140,12 @@ class GameBase:
 
 
 	def menu(self, header, options, width, back_color=libtcod.black, fore_color=libtcod.white):
+		import debug
+		print '------\n'
+		print debug._get_last_module(100)
+		print 'menu(', self, header, options, width, back_color, fore_color, ')'
+		print '------\n'
+
 		if self.con is None: self.con = 0
 		if len(options) > 26: raise ValueError('too many items')
 
@@ -140,6 +154,8 @@ class GameBase:
 		header_height = libtcod.console_get_height_rect(con, 0,0, width, self.SCREEN_HEIGHT, header)
 		height = len(options) + header_height
 		window = libtcod.console_new(width, height)
+		print 'window id is:', window
+		print
 
 		libtcod.console_set_default_foreground(window, fore_color)
 		libtcod.console_print_rect(window, 0,0, width,height, header)
@@ -152,12 +168,17 @@ class GameBase:
 
 		x = self.SCREEN_WIDTH/2 - width/2
 		y = self.SCREEN_HEIGHT/2 - height/2
-		libtcod.console_blit(window, 0,0, width,height, 0, x,y, 1.0, 0.7)
+		libtcod.console_blit(window, 0,0, width,height, 0, x,y, 1.0, 0.9)
 
 		key = libtcod.Key()
 		mouse = libtcod.Mouse()
 		libtcod.console_flush()
 		libtcod.sys_wait_for_event(libtcod.KEY_PRESSED, key, mouse, True)
+
+		libtcod.console_clear(window)
+		libtcod.console_blit(window, 0,0, width,height, 0, x,y, 1.0, 0.9)
+		libtcod.console_delete(window)
+		libtcod.console_flush()
 
 		index = key.c - ord('a')
 		if index >= 0 and index < len(options): return index
