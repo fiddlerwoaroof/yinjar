@@ -6,5 +6,5 @@ If you want to modify the code, the files contained under data/ might be a good 
 
 - Python (included on OS X and usually on Linux, install from http://python.org for Windows)
 - PyYAML
-- libTCOD (included but if on 64-bit linux download from here: http://doryen.eptalys.net/libtcod/download/)
+- libTCOD (if you are running 64bit Linux, run linux64.sh before starting the game)
 - SDL (included with libTCOD)
