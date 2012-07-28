@@ -1,43 +1,96 @@
 import os.path
+import yaml
 import textwrap
 import math
 import libtcodpy as libtcod
 import glob
 libtcod.console_set_keyboard_repeat(500, 50)
-for file in glob.glob('./data/namegen/*.cfg'):
-	libtcod.namegen_parse(file)
+for fil in glob.glob('./data/namegen/*.cfg'):
+	libtcod.namegen_parse(fil)
+
+help = '''
+ 'i': Inventory
+ 'd': Drop
+ 'g': Get item (Pick up)
+ '?': Help
+ Alt+Escape: Exit
+
+ Arrow Keys for movement / selecting
+ Name of item under the mouse shown
+ above the health bar
+'''
 
 from game import GameBase
 import levels
 import objects
 import utilities
 if __name__ == 'main':
+	class Null: pass
+	class SettingsObject(object):
+		def __init__(self, setting_name, default=Null):
+			self.setting_name = setting_name
+			self.default = default
+
+		def __get__(self, instance, owner):
+			result = instance.settings.get(self.setting_name, self.default)
+			if result is Null:
+				raise KeyError('%s is not specified in the configuration' % self.setting_name)
+			return result
+
 	class Game(GameBase):
 		#actual size of the window
-		SCREEN_WIDTH, SCREEN_HEIGHT = 155, 90
+		def load_settings(self):
+			self.settings = yaml.safe_load(
+				file(os.path.join('./data/main.yml'))
+			)
+			if self.settings == None:
+				self.settings = {}
+			print self.settings
 
-		MAP_WIDTH, MAP_HEIGHT = SCREEN_WIDTH, SCREEN_HEIGHT - 17
+		SCREEN_WIDTH = SettingsObject('screen_width', 80)
+		SCREEN_HEIGHT = SettingsObject('screen_height', 50)
+
+		PANEL_HEIGHT = 15
 
 		INVENTORY_WIDTH = 50
+
+		@property
+		def MAP_WIDTH(self):
+			return self.SCREEN_WIDTH
+		@property
+		def MAP_HEIGHT(self):
+			return self.SCREEN_HEIGHT - (self.PANEL_HEIGHT + 2)
+
+
 		BAR_WIDTH = 25
-
-		PANEL_HEIGHT = SCREEN_HEIGHT - MAP_HEIGHT - 2
-		PANEL_Y = SCREEN_HEIGHT - PANEL_HEIGHT
-
 		MSG_X = BAR_WIDTH + 2
-		MSG_WIDTH, MSG_HEIGHT = SCREEN_WIDTH - BAR_WIDTH - 2, PANEL_HEIGHT - 1
+		MSG_HEIGHT = PANEL_HEIGHT
 
-		ROOM_MIN_SIZE, ROOM_MAX_SIZE = 7, 19
+		@property
+		def PANEL_Y(self):
+			return self.SCREEN_HEIGHT - self.PANEL_HEIGHT
 
-		MAX_ROOMS = 51
+		@property
+		def MSG_WIDTH(self):
+			return self.SCREEN_WIDTH - self.MSG_X
 
-		MAX_ROOM_MONSTERS, MAX_ROOM_ITEMS = 9, 6
+		@property
+		def MSG_HEIGHT(self):
+			return self.PANEL_HEIGHT - 1
+
+		ROOM_MIN_SIZE = SettingsObject('room_min_wall_length', 4)
+		ROOM_MAX_SIZE = SettingsObject('room_max_wall_length', 7)
+
+		MAX_ROOMS = SettingsObject('max_number_rooms', 10)
+		MAX_ROOM_MONSTERS = SettingsObject('max_number_room_monsters', 6)
+		MAX_ROOM_ITEMS = SettingsObject('max_number_room_items', 3)
 
 		CONFUSE_NUM_TURNS = 17
 
 		LIMIT_FPS = 20	#20 frames-per-second maximum
 
 		def __init__(self):
+			self.load_settings()
 			GameBase.__init__(self, 'caer flinding', self.SCREEN_WIDTH, self.SCREEN_HEIGHT)
 
 			self.select_cb = None
@@ -197,16 +250,33 @@ if __name__ == 'main':
 
 		@mvkeyhandler.handle('i')
 		def mvkeyhandler(self):
-			item = self.inventory_menu('choose item\n')
+			item = self.inventory_menu('Choose item to use\n')
 			if item is not None:
 				item.bind_game(self)
 				self.player.use(item)
 
 		@mvkeyhandler.handle('d')
 		def mvkeyhandler(self):
-			chosen_item = self.inventory_menu('Choose the item to drop:')
+			chosen_item = self.inventory_menu('Choose item to drop\n')
 			if chosen_item is not None:
 				self.player.drop(chosen_item.owner)
+
+		@mvkeyhandler.handle('n')
+		def mvkeyhandler(self):
+			chosen_item = self.inventory_menu('Choose item to unmod\n')
+			if chosen_item is not None:
+				data = chosen_item.mods.keys()
+				index = self.menu('Choose \nmod to \nundo\n', data, self.INVENTORY_WIDTH)
+				if index is not None:
+					self.player.unmodify(chosen_item.name, data[index])
+
+		@mvkeyhandler.handle('m')
+		def mvkeyhandler(self):
+			chosen_item = self.inventory_menu('Choose item to mod\n')
+			if chosen_item is not None:
+				chosen_mod = self.mod_menu('Choose mod to apply\n')
+				if chosen_mod is not None:
+					self.player.modify(chosen_item.name, chosen_mod.name)
 
 		@mvkeyhandler.handle('g')
 		def mvkeyhandler(self):
@@ -221,6 +291,10 @@ if __name__ == 'main':
 		@mvkeyhandler.handle('>')
 		def mvkeyhandler(self):
 			self.change_level(down=True)
+
+		@mvkeyhandler.handle('?')
+		def mvkeyhandler(self):
+			self.menu(help, [], 50)
 
 		selectkeyhandler = utilities.MovementKeyListener()
 		@selectkeyhandler.up
@@ -284,6 +358,19 @@ if __name__ == 'main':
 
 			libtcod.console_blit(self.panel, 0,0, self.SCREEN_WIDTH,self.PANEL_HEIGHT, 0,0, self.PANEL_Y)
 
+		def main_menu(self):
+			message = (
+				'Welcome to YinJAR: is not Just Another Roguelike (WIP)',
+				'',
+				'Choose an option:',
+				'',
+			)
+
+			options = ['Play', 'Exit']
+			return options[
+				self.menu('\n'.join(message), options, len(message[0]))
+			]
+
 	game_instance = Game()
 	from monsters import MonsterLoader
 
@@ -306,6 +393,9 @@ if __name__ == '__main__':
 	il = ItemLoader(os.path.join('.','data','items'))
 	il.load_items()
 
-	game_instance.setup_map()
-	game_instance.main()
+	game_instance.load_settings()
+	action = game_instance.main_menu()
+	if action.lower() == 'play':
+		game_instance.setup_map()
+		game_instance.main()
 

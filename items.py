@@ -1,4 +1,5 @@
 from __future__ import division
+import collections
 import os.path
 import glob
 import yaml
@@ -13,10 +14,14 @@ from main import Game
 
 
 class Item(object):
+	stack_limit = 5
+	potency = None
+	item_class = None
+	distance = None
+	probability = 1
+
 	def __init__(self, stackable=False):
-		self.stackable = stackable
-		self.stacks_with = []
-		self.stack_limit = 5
+		self.mods = collections.defaultdict(set)
 
 	def __new__(*args):
 		res = object.__new__(*args)
@@ -30,6 +35,24 @@ class Item(object):
 		self.user = None
 		return self.owner
 
+	def modify(self, mod):
+		undo = mod.modify(self)
+		self.mods[mod.name].add(mod)
+		self.owner.name = self.name
+
+	def unmodify(self, mod):
+		if hasattr(mod, 'upper'):
+			mods = self.mods[mod]
+		else:
+			mods = self.mods[mod.name]
+		if mods != set():
+			mod = mods.pop()
+			mod.revert(self)
+			self.owner.name = self.name
+			if mods == set():
+				self.mods.pop(mod.name)
+			print 'self.mods', self.mods
+
 class ItemLoader(object):
 	def __init__(self, dir):
 		self.dir = dir
@@ -41,6 +64,8 @@ class ItemLoader(object):
 				self.load_item(doc)
 
 	def load_item(self, doc):
+		if doc is None: return
+
 		_color = doc.get('color', None)
 		if _color is None:
 			_color = libtcod.green
@@ -61,6 +86,9 @@ class ItemLoader(object):
 			name = doc.get('item_description')
 			char = doc.get('char', '!')
 			color = _color
+			stack_limit = doc.get('stack_limit', Item.stack_limit)
+			potency = doc.get('potency')
+			distance = doc.get('distance')
 
 
 @Game.register_item_type(5)
@@ -68,16 +96,18 @@ class HealingPotion(Item):
 	name = 'Healing potion'
 	char = '\x03'
 	color = libtcod.violet
+	potency = 10
+	item_class = 'healing'
 	def use(self):
 		fighter = self.user.fighter
 
 		result = True
 		if fighter.hp == fighter.max_hp:
-			self.game.message('You\'re full, can\'t heal', libtcod.red)
+			self.game.message('Full health, can\'t heal', libtcod.red)
 			result = False
 		else:
 			self.game.message('Healing...')
-			fighter.heal(10)
+			fighter.heal(self.potency)
 
 		return result
 
@@ -86,11 +116,14 @@ class SuperHealingPotion(Item):
 	name = 'Super healing potion'
 	char = '\x03'
 	color = libtcod.yellow
+	probability = .5
+	potency = 10
+	item_class = 'healing'
 	def use(self):
 		fighter = self.user.fighter
-		if random.random() < .75:
-			fighter.max_hp += 10
-			fighter.heal(10)
+		if random.random() < self.probability:
+			fighter.max_hp += self.potency
+		fighter.heal(self.potency)
 		return True
 
 @Game.register_item_type(1)
@@ -98,6 +131,7 @@ class Confusion(Item):
 	name = 'Confusion'
 	char = 'c'
 	color=libtcod.dark_chartreuse
+	item_class = 'monster defense'
 	def use(self):
 		monster = monsters.get_closest_monster(self.user)
 
@@ -116,10 +150,12 @@ class Strengthen(Item):
 	name = 'Strengthen'
 	char = 's'
 	color = libtcod.chartreuse
+	item_class = 'attack'
+	potency = 20
 	def use(self):
 		if self.user.fighter:
 			self.game.message('%s feels a surge of strength' % self.user.name)
-			self.user.fighter.stat_adjust(20, self.adj)
+			self.user.fighter.stat_adjust(self.potency, self.adj)
 		return True
 
 	def adj(self, owner):
@@ -134,10 +170,12 @@ class Protect(Item):
 	name = 'Protect'
 	char = 'p'
 	color = libtcod.chartreuse
+	item_class = 'defense'
+	potency = 15
 	def use(self):
 		if self.user.fighter:
 			self.game.message('%s is surrounded by a protecting aura' % self.user.name)
-			self.user.fighter.stat_adjust(15, self.adj)
+			self.user.fighter.stat_adjust(self.potency, self.adj)
 		return True
 
 	def adj(self, owner):
@@ -152,12 +190,14 @@ class LightningBolt(Item):
 	name = 'Lightning Bolt'
 	char = 'z'
 	color = libtcod.darkest_red
+	item_class = 'attack'
+	potency = 13
 	def use(self):
 		monster = monsters.get_closest_monster(self.user)
 		result = False
 		if monster and self.user.can_see(monster.x, monster.y):
 			self.game.message('Monster %s has been struck by lightning' % monster.name)
-			monster.fighter.take_damage(13)
+			monster.fighter.take_damage(self.potency)
 			result = True
 		else:
 			self.game.message('No target')
@@ -168,22 +208,23 @@ class Jump(Item):
 	name = 'Jump'
 	char = 'j'
 	color= libtcod.dark_green
-	jump_distance = 3
+	distance = 3
+	item_class = 'movement'
 	def use(self):
 		self.game.select(self.jump)
 		return True
 	def jump(self, x,y):
 		dist = self.user.distance(x,y)
 
-		if dist <= self.jump_distance:
+		if dist <= self.distance:
 			self.user.x, self.user.y = x,y
 			self.game.message('you are transported to a new place')
-		elif random.random() < self.jump_distance/dist:
+		elif random.random() < self.distance/dist:
 			self.user.x, self.user.y = x,y
 			self.game.message('you strain all your power to move %d squares' % int(dist))
 		else:
 			self.game.message('you didn\'t make it')
-			self.user.fighter.take_damage( int(round(2 * dist/self.jump_distance)) )
+			self.user.fighter.take_damage( int(round(2 * dist/self.distance)) )
 
 @Game.register_item_type(3)
 class Acquire(Item):
@@ -191,6 +232,7 @@ class Acquire(Item):
 	char = 'a'
 	color= libtcod.dark_green
 	effect_distance = 5
+	item_class = 'pickup'
 	def use(self):
 		self.game.message('what do you want?')
 		self.game.select(self.get)
@@ -205,6 +247,8 @@ class Smite(Item):
 	name = 'Smite'
 	char = '\x0f'
 	color = libtcod.red
+	item_class = 'attack'
+	potency = 10
 	def use(self):
 		self.game.select(self.smite)
 		return True
@@ -212,7 +256,7 @@ class Smite(Item):
 	def smite(self, x,y):
 		monster = monsters.monster_at(x,y)
 		if monster:
-			monster.fighter.take_damage(10)
+			monster.fighter.take_damage(self.potency)
 			if monster.fighter:
 				self.game.message('%s is smitten, he only retains %s hp' % (monster.name, monster.fighter.hp))
 			else:
@@ -224,7 +268,9 @@ class Fireball(Item):
 	name = 'Fireball'
 	char = '*'
 	color = libtcod.darker_red
-	effect_radius = 3
+	effect_radius = 5
+	potency = (20,6)
+	item_class = 'splash attack'
 
 	def use(self):
 		self.game.select(self.smite)
@@ -232,16 +278,18 @@ class Fireball(Item):
 
 	def smite(self, x,y):
 		if random.random() < .1:
+			self.game.message('the fireball is amazingly effective', libtcod.green)
 			self.effect_radius *= 2
 
+		direct_damage, splash_damage = self.potency
 		strikes = []
 		for obj in self.owner.level.objects:
 			if obj.fighter and obj is not self.user:
 				if (obj.x, obj.y) == (x,y):
 					self.game.message('%s takes a direct hit from the fireball' % obj.name)
-					obj.fighter.take_damage(20)
+					obj.fighter.take_damage(direct_damage)
 				elif obj.distance(x,y) < self.effect_radius:
-					obj.fighter.take_damage(6)
+					obj.fighter.take_damage(splash_damage)
 					if obj.fighter:
 						strikes.append('%s %s' % (obj.name, obj.fighter.hp))
 					else:
