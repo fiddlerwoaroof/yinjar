@@ -367,9 +367,9 @@ if __name__ == 'main':
 			)
 
 			options = ['Play', 'Exit']
-			return options[
-				self.menu('\n'.join(message), options, len(message[0]))
-			]
+			result = self.menu('\n'.join(message), options, len(message[0]))
+			if result is not None:
+				return options[result]
 
 	game_instance = Game()
 	from monsters import MonsterLoader
@@ -395,7 +395,10 @@ if __name__ == '__main__':
 
 	game_instance.load_settings()
 	action = game_instance.main_menu()
-	if action.lower() == 'play':
-		game_instance.setup_map()
-		game_instance.main()
+	while action is None or action.lower() != 'exit':
+		if action is not None and action.lower() == 'play':
+			game_instance.setup_map()
+			game_instance.main()
+			libtcod.console_clear(0)
+		action = game_instance.main_menu()
 
