@@ -4,7 +4,7 @@ namegen_class: "male"
 char: "h"
 color: amber
 
-spawn_chance: 4
+spawn_chance: 3
     
 hp: 10
 defense: 1
@@ -13,17 +13,46 @@ power: 5
 ai_class: monsters.AdvancedMonster
          
 ---
+race_name: "Scoundrel"
+namegen_class: "Mingos Norse male"
+char: "s"
+color: amber
+
+spawn_chance: 2
+
+hp: 10
+defense: 0
+power: 4
+         
+---
+race_name: "Thief"
+namegen_class: "male"
+char: "T"
+color: amber
+
+spawn_chance: 2
+
+hp: 10
+defense: 0
+power: 4
+         
+ai_class:
+   class_name: monsters.Thief
+   skill: 32
+
+---
 race_name: "Imp"
 namegen_class: "male"
 char: "i"
 color: dark_red
 
-spawn_chance: 7
+spawn_chance: 9
     
 hp: 4
 defense: 0
-power: 4
+power: 5
      
+ai_class: monsters.DjikstraMonster
 ---
 race_name: "Troll Fighter"
 namegen_class: "demon male"
@@ -32,9 +61,9 @@ color: darker_yellow
 
 spawn_chance: 1
     
-hp: 17
-defense: 2
-power: 5
+hp: 20
+defense: 1
+power: 7
      
-ai_class: monsters.AdvancedMonster
-         
+ai_class: monsters.DjikstraMonster
+

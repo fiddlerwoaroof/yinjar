@@ -84,6 +84,9 @@ class Inventory(object):
 		if v.ident != k: raise ValueError('Inventory key must equal the item\'s name')
 		self.add_item(v)
 
+	def keys(self):
+		return self.objects.keys()
+
 	def add_item(self, item):
 		print 'add_item', item.name
 		slot = self.objects.setdefault(item.name, [Slot()])
@@ -143,6 +146,7 @@ class Player(Object):
 		obj.x, obj.y = self.x, self.y
 		self.level.add_object(obj)
 		del self.inventory[obj.name]
+		return obj
 
 	def use(self, item):
 		item.owner.enter_level(self.level)

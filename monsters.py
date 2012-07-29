@@ -11,6 +11,10 @@ from algorithms import djikstra
 class Monster(object):
 	def init(self,*a): pass
 	def take_turn(self): pass
+	def load_data(self, data):
+		for k,v in data.items():
+			setattr(self, k,v)
+		return self
 
 class BasicMonster(Monster):
 	def take_turn(self):
@@ -25,6 +29,41 @@ class BasicMonster(Monster):
 				#print 'wiggled %s times' % counter
 			elif game_instance.player.fighter.hp > 0:
 				monster.fighter.attack(game_instance.player)
+
+class Thief(BasicMonster):
+	def init(self, level):
+		self.level = level
+		self.player = level.player
+		self.inventory = []
+		self.skill = self.skill / 100.0
+
+	def take_turn(self):
+		if self.player.distance(self.owner.x, self.owner.y) < 2 and random.random() < .7:
+			self.steal()
+		else:
+			BasicMonster.take_turn(self)
+
+	def steal(self):
+		if self.player.inventory.keys() == 0:
+			game_instance.message( ('%s can\'t find anything to steal'%self.owner.name).capitalize(), libtcod.orange )
+		obj = random.choice(self.player.inventory.keys())
+		game_instance.message( ('%s tries to steal %s'%(self.owner.name,obj)).capitalize(), libtcod.red)
+		if random.random() < self.skill:
+			game_instance.message( ('%s successfully steals %s'%(self.owner.name,obj)).capitalize(), libtcod.orange)
+			obj = self.player.inventory[obj]
+			self.inventory.append(obj)
+			del self.player.inventory[obj]
+
+	def death(self):
+		monster_death(self.owner)
+		for item in self.inventory:
+			self.drop(item)
+
+	def drop(self, item):
+		item.x, item.y = self.owner.pos
+		self.level.add_object(item)
+		self.inventory.remove(item)
+
 
 class DjikstraMonster(Monster):
 	maps = {}
@@ -52,7 +91,7 @@ class DjikstraMonster(Monster):
 
 			while self.dj.cycle(): pass
 
-		self.dj.visualize()
+		#self.dj.visualize()
 
 	def take_turn(self):
 		pos = self.owner.x, self.owner.y
@@ -187,10 +226,19 @@ class MonsterLoader(object):
 			color = libtcod.Color(*color)
 
 		ai_class = doc.get('ai_class', BasicMonster)
+		cls_data = {}
 		if ai_class is not BasicMonster:
+			cls_data = {}
+			if hasattr(ai_class, 'items'):
+				nm = ai_class.pop('class_name', 'monsters.BasicMonster')
+				cls_data.update(ai_class)
+				ai_class = nm
+
 			module, clas = ai_class.rsplit('.',1)
 			module = __import__(module)
 			ai_class = getattr(module, clas)
+
+		death_func = getattr(ai_class, 'death', monster_death)
 
 		print 'loading', doc
 		Game.register_monster_type(
@@ -209,30 +257,30 @@ class MonsterLoader(object):
 						power=doc['power'],
 						death_function=monster_death
 					),
-					ai=ai_class(),
+					ai=ai_class().load_data(cls_data),
 					level=level
 				)
 			)(doc), doc['spawn_chance'])
 
-#Game.register_monster_type(
-#	lambda map,level, con,x,y: objects.Object(map, con,
-#		x,y, '\x02', '%s the Orc' % libtcod.namegen_generate('Fantasy male'),
-#			libtcod.blue, True,
-#
-#		fighter=objects.Fighter(hp=10, defense=2, power=3, death_function=monster_death),
-#		ai=AdvancedMonster(),
-#		level=level
-#), 8)
-#
-#Game.register_monster_type(
-#	lambda map,level, con,x,y: objects.Object(map, con,
-#		x,y, '\x01', '%s the Troll' % libtcod.namegen_generate('Norse male'),
-#			libtcod.orange, True,
-#
-#		fighter=objects.Fighter(hp=16, defense=1, power=4, death_function=monster_death),
-#		ai=AdvancedMonster(),
-#		level=level
-#), 2)
+Game.register_monster_type(
+	lambda map,level, con,x,y: objects.Object(map, con,
+		x,y, '\x02', '%s the Orc' % libtcod.namegen_generate('Fantasy male'),
+			libtcod.blue, True,
+
+		fighter=objects.Fighter(hp=10, defense=2, power=3, death_function=monster_death),
+		ai=AdvancedMonster(),
+		level=level
+), 8)
+
+Game.register_monster_type(
+	lambda map,level, con,x,y: objects.Object(map, con,
+		x,y, '\x01', '%s the Troll' % libtcod.namegen_generate('Norse male'),
+			libtcod.orange, True,
+
+		fighter=objects.Fighter(hp=16, defense=1, power=4, death_function=monster_death),
+		ai=AdvancedMonster(),
+		level=level
+), 2)
 
 Game.register_monster_type(
 	lambda map,level, con,x,y: objects.Object(map, con,
@@ -240,7 +288,7 @@ Game.register_monster_type(
 			libtcod.amber, True,
 
 		fighter=objects.Fighter(hp=16, defense=1, power=7, death_function=monster_death),
-		ai=DjikstraMonster(),
+		ai=BasicMonster(),
 		level=level
 ), 1)
 Game.register_monster_type(None, 7)

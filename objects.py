@@ -34,6 +34,10 @@ class Object(object):
 			item.owner = self
 		self.item = item
 
+	@property
+	def pos(self):
+		return self.x, self.y
+
 	def enter_level(self, level):
 		self.level = level
 		return self
