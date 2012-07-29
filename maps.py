@@ -15,6 +15,7 @@ class Tile(object):
 		self.block_sight = block_sight
 
 
+
 class AutomataEngine(object):
 	def __init__(self, width=None, height=None, data=None, randomize=True):
 		if data:
@@ -187,6 +188,47 @@ class MazeGen(AutomataEngine):
 				tmp_data[x][y] = self.rule(x,y, cell)
 		return AutomataEngine(data=tmp_data)
 
+class AutomataLoader(AutomataEngine):
+	def load_rules(self):
+		self.rules = yaml.load(
+			file(
+				os.path.join('.', 'data', 'mapgenerator.yml')
+			)
+		)
+
+	def parse_rule(self, rule):
+		comp, val = rule.split('->')
+		val = val.strip()
+		if comp == 'is':
+			if val == 'odd':
+				return lambda a: (a%2)==1
+			elif val == 'even':
+				return lambda a: (a%2)==0
+			else:
+				return lambda a: a == int(val)
+		else:
+			val = int(val)
+			if comp.startswith('>'):
+				if comp.startswith('>='):
+					return lambda a: a >= val
+				return lambda a: a > val
+
+			elif comp.startswith('<'):
+				if comp.startswith('<='):
+					return lambda a: a <= val
+				return lambda a: a < val
+
+			elif comp.startswith('=='):
+				return lambda a: a == val
+
+	def rule(self, x,y, cell):
+		sum = self.sum_area((x,y), 1)
+		for rule in self.rules:
+			rule, _, result = rule.partition('::')
+			if parse_rule(rule)(cell):
+				if hasattr(result, 'upper') and result.lower()=='cell':
+					result = cell
+				return result
 
 class Automata1(AutomataEngine):
 	def rule(self, x,y, cell):
@@ -227,15 +269,15 @@ class NewSmoother(AutomataEngine):
 			return 1
 
 import collections
+from algorithms import djikstra
 class Map(collections.MutableSequence):
 	def __init__(self, width, height, con, level):
 		print 'hello again'
-		#self.data = Smoother(data=Automata1(width, height).iter(6).data).munge().to_map()
 		self.gen = MazeGen(width, height)
-		self.data = self.gen.munge()
+		self.map = self.data = self.gen.munge()
 		self.data = Automata1(data=self.data.data).iter(2)
-		self.data = Smoother(data=self.data.data).munge()
-		self.data = self.data.to_map()
+		self.map = Smoother(data=self.data.data).munge()
+		self.data = self.map.to_map()
 
 		self.width = width
 		self.height = height
@@ -378,6 +420,8 @@ class Map(collections.MutableSequence):
 	def choose_empty_point(self, room):
 		empty_points = [p for p in room.iter_cells() if not self.is_blocked(*p)]
 		if empty_points:
+			for x in empty_points:
+				self.level.get_djikstra(*x)
 			return random.choice(empty_points)
 		return None,None
 

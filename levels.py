@@ -1,3 +1,4 @@
+from algorithms import djikstra
 import libtcodpy as libtcod
 import maps
 import debug
@@ -16,7 +17,16 @@ class Level(object):
 		self.number = num
 		return self
 
+	def get_djikstra(self, x,y):
+		if (x,y) not in self.djikstra_cache:
+			dj = self.djikstra_cache[x,y] = djikstra.DjikstraMap(self.map.map.data)
+			dj.set_goals( (x,y), weight=0)
+		dj = self.djikstra_cache[x,y]
+		dj.cycle()
+		return dj
+
 	def __init__(self, width, height, con, item_types=None, monster_types=None):
+		self.djikstra_cache = {}
 		self.objects = []
 		self.map = maps.Map(width, height, con, self)
 		self.fov_map = libtcod.map_new(self.map.width, self.map.height)
@@ -119,7 +129,13 @@ class Level(object):
 		return libtcod.map_is_in_fov(self.fov_map, x,y)
 
 	def is_blocked(self, x,y):
-		return self.map.is_blocked(x,y)
+		if x < 0 or x > self.map.width:
+			result = True
+		elif y < 0 or y > self.map.height:
+			result = True
+		else:
+			result = self.map.is_blocked(x,y)
+		return result
 
 
 import game

@@ -24,7 +24,7 @@ class GameBase:
 	def message(self, msg, color=None):
 		if color is None:
 			color = libtcod.white
-		utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, msg)
+		utilities.message(self.game_msgs, self.MSG_HEIGHT, self.MSG_WIDTH, msg, color=color)
 
 	def __init__(self, app_name='test app', screen_width=None, screen_height=None):
 		print '__init__'

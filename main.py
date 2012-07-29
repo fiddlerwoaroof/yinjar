@@ -366,7 +366,7 @@ if __name__ == 'main':
 				'',
 			)
 
-			options = ['Play', 'Exit']
+			options = ['Resume', 'Play', 'Exit']
 			result = self.menu('\n'.join(message), options, len(message[0]))
 			if result is not None:
 				return options[result]
@@ -396,9 +396,11 @@ if __name__ == '__main__':
 	game_instance.load_settings()
 	action = game_instance.main_menu()
 	while action is None or action.lower() != 'exit':
-		if action is not None and action.lower() == 'play':
-			game_instance.setup_map()
-			game_instance.main()
-			libtcod.console_clear(0)
+		if action is not None:
+			if action.lower() == 'play':
+				game_instance.setup_map()
+			if action.lower() in {'play', 'resume'}:
+				game_instance.main()
+				libtcod.console_clear(0)
 		action = game_instance.main_menu()
 

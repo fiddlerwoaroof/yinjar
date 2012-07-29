@@ -6,8 +6,10 @@ import libtcodpy as libtcod
 import items
 
 from main import game_instance
+from algorithms import djikstra
 
 class Monster(object):
+	def init(self,*a): pass
 	def take_turn(self): pass
 
 class BasicMonster(Monster):
@@ -20,9 +22,61 @@ class BasicMonster(Monster):
 				while (dx,dy) == (0,0) and counter < 10: # wiggle around if stuck
 					counter += 1
 					dx,dy = monster.move(random.randrange(-1,2,2), random.randrange(-1,2,2))
-				print 'wiggled %s times' % counter
+				#print 'wiggled %s times' % counter
 			elif game_instance.player.fighter.hp > 0:
 				monster.fighter.attack(game_instance.player)
+
+class DjikstraMonster(Monster):
+	maps = {}
+
+	@property
+	def dj(self):
+		result = self.maps.get(id(self.level))
+		if result is None:
+			result = self.maps[id(self.level)] = djikstra.DjikstraMap()
+		return result
+
+	def init(self, level):
+		self.level = level
+		#print
+		#print 'now olog on level:', self.level, self.maps
+
+		self.opos = self.owner.x, self.owner.y
+		self.ppos = None
+
+		map = level.map
+		if self.dj.map is None:
+			self.dj.load_map(map.map.data)
+
+			self.dj.set_goals(*(room.center for room in map.gen.rooms), weight = 0)
+
+			while self.dj.cycle(): pass
+
+		self.dj.visualize()
+
+	def take_turn(self):
+		pos = self.owner.x, self.owner.y
+
+		dx,dy = 0,0
+		if self.level.is_visible(*pos):
+			if self.level.player.distance(*pos) < 2:
+				self.owner.fighter.attack(game_instance.player)
+			else:
+				dx, dy = self.owner.move_towards(*self.level.player.pos)
+
+		elif random.random() < .4:
+			dx,dy = self.dj.nav(*pos)
+
+		else:
+			dj = self.level.get_djikstra(*self.level.player.pos)
+			#print pos, '<---', self.level.player.distance(*pos)
+			x,y = pos
+			dx,dy = dj.nav(x,y)
+
+		self.owner.move(dx,dy)
+
+
+
 
 class AdvancedMonster(Monster):
 	def perimeter(self, rect):
@@ -160,25 +214,25 @@ class MonsterLoader(object):
 				)
 			)(doc), doc['spawn_chance'])
 
-Game.register_monster_type(
-	lambda map,level, con,x,y: objects.Object(map, con,
-		x,y, '\x02', '%s the Orc' % libtcod.namegen_generate('Fantasy male'),
-			libtcod.blue, True,
-
-		fighter=objects.Fighter(hp=10, defense=2, power=3, death_function=monster_death),
-		ai=AdvancedMonster(),
-		level=level
-), 8)
-
-Game.register_monster_type(
-	lambda map,level, con,x,y: objects.Object(map, con,
-		x,y, '\x01', '%s the Troll' % libtcod.namegen_generate('Norse male'),
-			libtcod.orange, True,
-
-		fighter=objects.Fighter(hp=16, defense=1, power=4, death_function=monster_death),
-		ai=AdvancedMonster(),
-		level=level
-), 2)
+#Game.register_monster_type(
+#	lambda map,level, con,x,y: objects.Object(map, con,
+#		x,y, '\x02', '%s the Orc' % libtcod.namegen_generate('Fantasy male'),
+#			libtcod.blue, True,
+#
+#		fighter=objects.Fighter(hp=10, defense=2, power=3, death_function=monster_death),
+#		ai=AdvancedMonster(),
+#		level=level
+#), 8)
+#
+#Game.register_monster_type(
+#	lambda map,level, con,x,y: objects.Object(map, con,
+#		x,y, '\x01', '%s the Troll' % libtcod.namegen_generate('Norse male'),
+#			libtcod.orange, True,
+#
+#		fighter=objects.Fighter(hp=16, defense=1, power=4, death_function=monster_death),
+#		ai=AdvancedMonster(),
+#		level=level
+#), 2)
 
 Game.register_monster_type(
 	lambda map,level, con,x,y: objects.Object(map, con,
@@ -186,7 +240,7 @@ Game.register_monster_type(
 			libtcod.amber, True,
 
 		fighter=objects.Fighter(hp=16, defense=1, power=7, death_function=monster_death),
-		ai=AdvancedMonster(),
+		ai=DjikstraMonster(),
 		level=level
 ), 1)
 Game.register_monster_type(None, 7)

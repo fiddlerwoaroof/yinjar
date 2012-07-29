@@ -4,7 +4,7 @@ namegen_class: "male"
 char: "h"
 color: amber
 
-spawn_chance: 4
+spawn_chance: 0
     
 hp: 10
 defense: 1
@@ -18,7 +18,7 @@ namegen_class: "male"
 char: "i"
 color: dark_red
 
-spawn_chance: 7
+spawn_chance: 3
     
 hp: 4
 defense: 0
@@ -30,7 +30,7 @@ namegen_class: "demon male"
 char: "%"
 color: darker_yellow
 
-spawn_chance: 1
+spawn_chance: 0
     
 hp: 17
 defense: 2

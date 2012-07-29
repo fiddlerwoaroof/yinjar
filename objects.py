@@ -14,22 +14,25 @@ class Object(object):
 		self.con = con
 #		self.map = map
 
+		if level is not None:
+			level.add_object(self)
+			level.get_djikstra(x,y)
+
+		self.level = level
+
+
 		if fighter is not None:
 			fighter.owner = self
 		self.fighter = fighter
 
 		if ai is not None:
 			ai.owner = self
+			ai.init(self.level)
 		self.ai = ai
 
 		if item is not None:
 			item.owner = self
 		self.item = item
-
-		if level is not None:
-			level.add_object(self)
-
-		self.level = level
 
 	def enter_level(self, level):
 		self.level = level
@@ -39,6 +42,7 @@ class Object(object):
 		if not self.level.is_blocked(self.x+dx,self.y+dy):
 			self.x += dx
 			self.y += dy
+			self.level.get_djikstra(self.x, self.y)
 		else:
 			dx,dy = 0,0
 		return dx,dy
@@ -61,6 +65,7 @@ class Object(object):
 		dx = target_x - self.x
 		dy = target_y - self.y
 		distance = math.sqrt(dx**2+dy**2)
+		if distance == 0: distance = 1
 
 		dx = int(round(dx/distance))
 		dy = int(round(dy/distance))
