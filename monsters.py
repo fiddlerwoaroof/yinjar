@@ -44,15 +44,16 @@ class Thief(BasicMonster):
 			BasicMonster.take_turn(self)
 
 	def steal(self):
-		if self.player.inventory.keys() == 0:
+		if self.player.inventory.keys():
+			print self.player.inventory.keys()
 			game_instance.message( ('%s can\'t find anything to steal'%self.owner.name).capitalize(), libtcod.orange )
-		obj = random.choice(self.player.inventory.keys())
-		game_instance.message( ('%s tries to steal %s'%(self.owner.name,obj)).capitalize(), libtcod.red)
-		if random.random() < self.skill:
-			game_instance.message( ('%s successfully steals %s'%(self.owner.name,obj)).capitalize(), libtcod.orange)
-			obj = self.player.inventory[obj]
-			self.inventory.append(obj)
-			del self.player.inventory[obj]
+			obj = random.choice(self.player.inventory.keys())
+			game_instance.message( ('%s tries to steal %s'%(self.owner.name,obj)).capitalize(), libtcod.red)
+			if random.random() < self.skill:
+				game_instance.message( ('%s successfully steals %s'%(self.owner.name,obj)).capitalize(), libtcod.orange)
+				obj = self.player.inventory[obj]
+				self.inventory.append(obj)
+				del self.player.inventory[obj.name]
 
 	def death(self):
 		monster_death(self.owner)
@@ -77,20 +78,12 @@ class DjikstraMonster(Monster):
 
 	def init(self, level):
 		self.level = level
-		#print
-		#print 'now olog on level:', self.level, self.maps
+		self.owner.always_visible = True
 
 		self.opos = self.owner.x, self.owner.y
 		self.ppos = None
 
 		map = level.map
-		if self.dj.map is None:
-			self.dj.load_map(map.map.data)
-
-			self.dj.set_goals(*(room.center for room in map.gen.rooms), weight = 0)
-
-			while self.dj.cycle(): pass
-
 		#self.dj.visualize()
 
 	def take_turn(self):
@@ -103,8 +96,8 @@ class DjikstraMonster(Monster):
 			else:
 				dx, dy = self.owner.move_towards(*self.level.player.pos)
 
-		elif random.random() < .4:
-			dx,dy = self.dj.nav(*pos)
+		#elif random.random() < .4:
+		#	dx,dy = self.dj.nav(*pos)
 
 		else:
 			dj = self.level.get_djikstra(*self.level.player.pos)

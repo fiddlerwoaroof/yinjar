@@ -419,11 +419,13 @@ class Map(collections.MutableSequence):
 
 	def choose_empty_point(self, room):
 		empty_points = [p for p in room.iter_cells() if not self.is_blocked(*p)]
+
+		result = None,None
 		if empty_points:
-			for x in empty_points:
-				self.level.get_djikstra(*x)
-			return random.choice(empty_points)
-		return None,None
+			result = random.choice(empty_points)
+			self.level.get_djikstra(*result)
+
+		return result
 
 	def place_objects(self, room, monster_types, max_num_monsters, item_types, max_num_items):
 		self.place_monsters(room, monster_types, max_num_monsters)

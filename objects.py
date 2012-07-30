@@ -12,6 +12,7 @@ class Object(object):
 		self.color = color
 		self.blocks = blocks
 		self.con = con
+		self.always_visible = False
 #		self.map = map
 
 		if level is not None:
@@ -80,7 +81,7 @@ class Object(object):
 		return self.move(dx, dy)
 
 	def draw(self, player=None):
-		if player is None or player.can_see(self.x, self.y):
+		if player is None or self.always_visible or player.can_see(self.x, self.y):
 			libtcod.console_set_default_foreground(self.con, self.color)
 			libtcod.console_put_char(self.con, self.x,self.y, self.char, libtcod.BKGND_NONE)
 		return self

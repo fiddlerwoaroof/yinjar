@@ -103,8 +103,9 @@ if __name__ == 'main':
 			self.levels = [levels.Level(self.MAP_WIDTH, self.MAP_HEIGHT, self.con, self.item_types, self.monster_types)]
 
 			x,y = None,None
+
 			self.player = objects.Player(self.level.map, self.con, x,y, '@', libtcod.white,
-				fighter=objects.Fighter(hp=20, defense = 2, power = 10, death_function=self.player_death)
+				fighter=objects.Fighter(hp=40, defense = 2, power = 11, death_function=self.player_death)
 			)
 
 
@@ -345,6 +346,13 @@ if __name__ == 'main':
 			libtcod.console_print_ex(self.panel, self.BAR_WIDTH/2,3, libtcod.BKGND_NONE, libtcod.CENTER,
 				'%s p %s d' %(self.player.fighter.power, self.player.fighter.defense)
 			)
+			fps = libtcod.sys_get_fps()
+			if fps < 10:
+				import debug
+				print 'FPS drop!'
+			libtcod.console_print_ex(self.panel, self.BAR_WIDTH/2,4, libtcod.BKGND_NONE, libtcod.CENTER,
+				'%s FPS' %(libtcod.sys_get_fps())
+			)
 
 			libtcod.console_set_default_foreground(self.panel, libtcod.light_gray)
 			libtcod.console_print(self.panel, 1, 0, self.get_names_under_mouse())
@@ -395,6 +403,7 @@ if __name__ == '__main__':
 
 	game_instance.load_settings()
 	action = game_instance.main_menu()
+	libtcod.sys_set_fps(Game.LIMIT_FPS)
 	while action is None or action.lower() != 'exit':
 		if action is not None:
 			if action.lower() == 'play':

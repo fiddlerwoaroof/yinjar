@@ -3,7 +3,7 @@ import os
 def take(num, iter_):
    for _ in range(num): yield iter_.next()
 
-def _get_last_module(num=1, exclude_modules={'debug'}):
+def get_last_module(num=1, exclude_modules={'debug'}):
 	modname = '%s.py' % __name__.split('.')[-1]
 	try:
 		result = take(
@@ -35,3 +35,4 @@ def debug(func):
 		return result
 	return _inner
 
+_get_last_module = get_last_module

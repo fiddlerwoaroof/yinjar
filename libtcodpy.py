@@ -655,7 +655,7 @@ RIGHT=1
 CENTER=2
 # initializing the console
 def console_init_root(w, h, title, fullscreen=False, renderer=RENDERER_SDL):
-    _lib.TCOD_console_init_root(w, h, title, c_uint(fullscreen), c_uint(renderer))
+    _lib.TCOD_console_init_root(w, h, title, c_bool(fullscreen), c_uint(renderer))
 
 def console_get_width(con):
     return _lib.TCOD_console_get_width(con)
@@ -772,7 +772,7 @@ def console_get_height_rect(con, x, y, w, h, fmt):
     return _lib.TCOD_console_get_height_rect(c_void_p(con), x, y, w, h, c_char_p(fmt))
 
 def console_rect(con, x, y, w, h, clr, flag=BKGND_DEFAULT):
-    _lib.TCOD_console_rect(con, x, y, w, h, c_int(clr), flag)
+    _lib.TCOD_console_rect(con, x, y, w, h, c_bool(clr), flag)
 
 def console_hline(con, x, y, l, flag=BKGND_DEFAULT):
     _lib.TCOD_console_hline( con, x, y, l, flag)
@@ -1462,10 +1462,10 @@ def map_copy(source, dest):
     return _lib.TCOD_map_copy(source, dest)
 
 def map_set_properties(m, x, y, isTrans, isWalk):
-    _lib.TCOD_map_set_properties(m, x, y, c_int(isTrans), c_int(isWalk))
+    _lib.TCOD_map_set_properties(m, x, y, c_bool(isTrans), c_bool(isWalk))
 
 def map_clear(m,walkable=False,transparent=False):
-    _lib.TCOD_map_clear(m,c_int(walkable),c_int(transparent))
+    _lib.TCOD_map_clear(m,c_bool(walkable),c_bool(transparent))
 
 def map_compute_fov(m, x, y, radius=0, light_walls=True, algo=FOV_RESTRICTIVE ):
     _lib.TCOD_map_compute_fov(m, x, y, c_int(radius), c_bool(light_walls), c_int(algo))

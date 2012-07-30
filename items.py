@@ -91,12 +91,12 @@ class ItemLoader(object):
 			distance = doc.get('distance')
 
 
-@Game.register_item_type(5)
+@Game.register_item_type(10)
 class HealingPotion(Item):
 	name = 'Healing potion'
 	char = '\x03'
 	color = libtcod.violet
-	potency = 10
+	potency = 15
 	item_class = 'healing'
 	def use(self):
 		fighter = self.user.fighter
@@ -111,7 +111,7 @@ class HealingPotion(Item):
 
 		return result
 
-@Game.register_item_type(2)
+@Game.register_item_type(7)
 class SuperHealingPotion(Item):
 	name = 'Super healing potion'
 	char = '\x03'
