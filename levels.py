@@ -19,10 +19,12 @@ class Level(object):
 
 	def get_djikstra(self, x,y):
 		if (x,y) not in self.djikstra_cache:
-			dj = self.djikstra_cache[x,y] = djikstra.DjikstraMap(self.map.map.data)
+			print 'new (%s, %s)' % (x,y)
+			dj = self.djikstra_cache[x,y] = djikstra.DjikstraMap()
 			dj.set_goals( (x,y), weight=0)
+			dj.load_map(self.map.map.data)
 		dj = self.djikstra_cache[x,y]
-		dj.iter(3)
+		dj.iter(5)
 		return dj
 
 	def __init__(self, width, height, con, item_types=None, monster_types=None):
@@ -102,19 +104,11 @@ class Level(object):
 				wall = cell.block_sight
 				walkable = not cell.blocked
 
-				if (x,y) in self.clear_cells and not self.is_blocked(x,y):
-					libtcod.console_set_char(self.con, x,y, ord(' '))
 				if wall or walkable:
 					color = {
 						True: {True: self.color_light_wall, False: self.color_light_ground},
 						False: {True: self.color_dark_wall, False: self.color_dark_ground}
 					}[visible][wall]
-					if not self.is_blocked(x,y):
-						dj=self.get_djikstra(*self.player.pos)
-						dist = dj.get_cell( (x,y) )
-						if 0 < dist < 10:
-							libtcod.console_put_char(self.con, x,y, ord(str(dist)))
-							self.clear_cells.add((x,y))
 				elif not walkable:
 					color = libtcod.Color(100,100,200)
 

@@ -17,7 +17,7 @@ class Object(object):
 
 		if level is not None:
 			level.add_object(self)
-			level.get_djikstra(x,y)
+			#level.get_djikstra(x,y)
 
 		self.level = level
 
@@ -47,7 +47,6 @@ class Object(object):
 		if not self.level.is_blocked(self.x+dx,self.y+dy):
 			self.x += dx
 			self.y += dy
-			self.level.get_djikstra(self.x, self.y)
 		else:
 			dx,dy = 0,0
 		return dx,dy
@@ -165,7 +164,10 @@ class Fighter(object):
 		if self.hp <= 0:
 			function = self.death_function
 			if function is not None:
-				function(self.owner)
+				try:
+					function(self.owner)
+				except TypeError:
+					function(self.owner.ai)
 
 	def attack(self, target):
 		damage = self.power - target.fighter.defense

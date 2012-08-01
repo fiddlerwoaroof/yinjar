@@ -61,6 +61,7 @@ class Thief(BasicMonster):
 			self.drop(item)
 
 	def drop(self, item):
+		print 'drop'
 		item.x, item.y = self.owner.pos
 		self.level.add_object(item)
 		self.inventory.remove(item)
@@ -90,17 +91,19 @@ class DjikstraMonster(Monster):
 		pos = self.owner.x, self.owner.y
 
 		dx,dy = 0,0
+		player_room = self.level.player.get_room()
+
 		if self.level.is_visible(*pos):
 			if self.level.player.distance(*pos) < 2:
 				self.owner.fighter.attack(game_instance.player)
 			else:
-				dx, dy = self.owner.move_towards(*self.level.player.pos)
+				dx, dy = self.owner.get_step_towards(*self.level.player.pos)
 
 		#elif random.random() < .4:
 		#	dx,dy = self.dj.nav(*pos)
 
-		else:
-			dj = self.level.get_djikstra(*self.level.player.pos)
+		elif player_room is not None:
+			dj = self.level.get_djikstra(*player_room.center)
 			#print pos, '<---', self.level.player.distance(*pos)
 			x,y = pos
 			dx,dy = dj.nav(x,y)
@@ -248,7 +251,7 @@ class MonsterLoader(object):
 						hp=doc['hp'],
 						defense=doc['defense'],
 						power=doc['power'],
-						death_function=monster_death
+						death_function=death_func
 					),
 					ai=ai_class().load_data(cls_data),
 					level=level

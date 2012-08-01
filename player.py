@@ -209,7 +209,7 @@ class Player(Object):
 	@triggers_recompute
 	def move(self, dx, dy):
 		result = Object.move(self, dx,dy)
-		self.level.get_djikstra(*self.pos)
+		#self.level.get_djikstra(*self.pos)
 		return result
 
 	def move_or_attack(self, dx, dy):
@@ -230,6 +230,11 @@ class Player(Object):
 		level.enter(self)
 		self.x, self.y = self.level.map.map_entrance
 		return self
+
+	def get_room(self):
+		for room in self.level.map.gen.rooms:
+			if self.pos in room:
+				return room
 
 
 import game
