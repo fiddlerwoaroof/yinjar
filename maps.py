@@ -4,6 +4,10 @@ import libtcodpy as libtcod
 import random
 from utilities import Rect
 
+try: import numpypy
+except ImportError: pass
+import numpy as np
+
 import objects
 
 class Tile(object):
@@ -18,12 +22,13 @@ class Tile(object):
 
 class AutomataEngine(object):
 	def __init__(self, width=None, height=None, data=None, randomize=True):
-		if data:
+		if data is not None:
 			self.data = data
 		elif randomize:
 			self.data = [ [ random.choice([0]+[1]*3) for y in range(height)] for x in range(width) ]
 		else:
 			self.data = [ [1 for y in range(height)] for x in range(width) ]
+		self.data = np.array(self.data)
 		self.width = width
 		self.height = height
 
@@ -32,7 +37,7 @@ class AutomataEngine(object):
 		x2,y2 = p2
 		x1,x2 = min([x1,x2]), max([x1,x2])
 		y1,y2 = min([y1,y2]), max([y1,y2])
-		result = [row[y1:y2+1] for row in self.data[x1:x2+1]]
+		result = self.data[x1:x2,y1:y2]
 		return result
 
 	def sum_area(self, p1, p2=None, summator=sum):
@@ -51,7 +56,7 @@ class AutomataEngine(object):
 				yield x,y,cell
 
 	def munge(self):
-		tmp_data = copy.deepcopy(self.data)
+		tmp_data = np.array(self.data)
 
 		for x,row in enumerate(self.data):
 			for y,cell in enumerate(row):
@@ -181,7 +186,7 @@ class MazeGen(AutomataEngine):
 		return cell
 
 	def munge(self):
-		tmp_data = copy.deepcopy(self.data)
+		tmp_data = np.array(self.data)
 
 		for x,row in enumerate(self.data):
 			for y,cell in enumerate(row):
