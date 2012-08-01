@@ -45,7 +45,6 @@ if __name__ == 'main':
 			)
 			if self.settings == None:
 				self.settings = {}
-			print self.settings
 
 		SCREEN_WIDTH = SettingsObject('screen_width', 80)
 		SCREEN_HEIGHT = SettingsObject('screen_height', 50)
@@ -87,7 +86,7 @@ if __name__ == 'main':
 
 		CONFUSE_NUM_TURNS = 17
 
-		LIMIT_FPS = 20	#20 frames-per-second maximum
+		LIMIT_FPS = 20 #frames-per-second maximum
 
 		def __init__(self):
 			self.load_settings()
@@ -117,7 +116,6 @@ if __name__ == 'main':
 			player.color = libtcod.dark_red
 
 		def setup_map(self):
-			print self.monster_types
 			self.player.enter_level(self.level)
 
 			self.level.setup(self.MAX_ROOMS,
@@ -163,7 +161,6 @@ if __name__ == 'main':
 						or
 					(self.current_level >= len(self.levels))
 			):
-				print 'hello'
 				new_level = levels.Level(
 					self.MAP_WIDTH, self.MAP_HEIGHT,
 					self.con, self.item_types, self.monster_types
@@ -347,9 +344,6 @@ if __name__ == 'main':
 				'%s p %s d' %(self.player.fighter.power, self.player.fighter.defense)
 			)
 			fps = libtcod.sys_get_fps()
-			if fps < 10:
-				import debug
-				print 'FPS drop!'
 			libtcod.console_print_ex(self.panel, self.BAR_WIDTH/2,4, libtcod.BKGND_NONE, libtcod.CENTER,
 				'%s FPS' %(libtcod.sys_get_fps())
 			)
