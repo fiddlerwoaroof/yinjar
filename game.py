@@ -63,9 +63,9 @@ class GameBase:
 			yield 0
 
 			self.render_all()
-			libtcod.console_flush()
 
 			yield 1
+			libtcod.console_flush()
 
 			self.handle_keys()
 
@@ -140,11 +140,6 @@ class GameBase:
 
 
 	def menu(self, header, options, width, back_color=libtcod.black, fore_color=libtcod.white):
-		import debug
-		print '------\n'
-		print debug._get_last_module(100)
-		print 'menu(', self, header, options, width, back_color, fore_color, ')'
-		print '------\n'
 
 		if self.con is None: self.con = 0
 		if len(options) > 26: raise ValueError('too many items')
