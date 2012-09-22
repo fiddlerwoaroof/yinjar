@@ -17,14 +17,13 @@ class Level(object):
 		self.number = num
 		return self
 
+	dijkstra_cache = {}
 	def get_djikstra(self, x,y):
 		if (x,y) not in self.djikstra_cache:
 			print 'new (%s, %s)' % (x,y)
-			dj = self.djikstra_cache[x,y] = djikstra.DjikstraMap()
-			dj.set_goals( (x,y), weight=0)
-			dj.load_map(self.map.map.data)
-		dj = self.djikstra_cache[x,y]
-		dj.iter(5)
+			dj = libtcod.dijkstra_new(self.fov_map)
+			libtcod.dijkstra_compute(dj, x, y)
+			self.dijkstra_cache[x,y] = dj
 		return dj
 
 	def __init__(self, width, height, con, item_types=None, monster_types=None):
@@ -99,7 +98,6 @@ class Level(object):
 				cell.explored = True
 
 			color = libtcod.black
-			#if True:
 			if cell.explored:
 				wall = cell.block_sight
 				walkable = not cell.blocked
@@ -113,11 +111,14 @@ class Level(object):
 					color = libtcod.Color(100,100,200)
 
 			if cell.explored or clear_all:
-				libtcod.console_set_char_background(self.con, x, y, color, libtcod.BKGND_SET)
+				if cell.block_sight and cell.explored:
+					libtcod.console_put_char_ex(self.con, x, y, '#', libtcod.white, color)
+				else:
+					libtcod.console_set_char_background(self.con, x, y, color, libtcod.BKGND_SET)
 
 	def init_fov(self):
 		libtcod.map_clear(self.fov_map)
-		#self.fov_map = libtcod.map_new(self.map.width, self.map.height)
+
 		for x,y,cell in self.map.iter_cells_with_coords():
 			libtcod.map_set_properties(self.fov_map, x,y,
 				not cell.block_sight,

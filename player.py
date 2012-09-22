@@ -209,7 +209,6 @@ class Player(Object):
 	@triggers_recompute
 	def move(self, dx, dy):
 		result = Object.move(self, dx,dy)
-		#self.level.get_djikstra(*self.pos)
 		return result
 
 	def move_or_attack(self, dx, dy):

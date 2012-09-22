@@ -6,7 +6,6 @@ import libtcodpy as libtcod
 import items
 
 from main import game_instance
-from algorithms import djikstra
 
 class Monster(object):
 	def init(self,*a): pass
@@ -70,13 +69,6 @@ class Thief(BasicMonster):
 class DjikstraMonster(Monster):
 	maps = {}
 
-	@property
-	def dj(self):
-		result = self.maps.get(id(self.level))
-		if result is None:
-			result = self.maps[id(self.level)] = djikstra.DjikstraMap()
-		return result
-
 	def init(self, level):
 		self.level = level
 		self.owner.always_visible = True
@@ -85,7 +77,6 @@ class DjikstraMonster(Monster):
 		self.ppos = None
 
 		map = level.map
-		#self.dj.visualize()
 
 	def take_turn(self):
 		pos = self.owner.x, self.owner.y
@@ -99,14 +90,17 @@ class DjikstraMonster(Monster):
 			else:
 				dx, dy = self.owner.get_step_towards(*self.level.player.pos)
 
-		#elif random.random() < .4:
-		#	dx,dy = self.dj.nav(*pos)
 
-		elif player_room is not None:
-			dj = self.level.get_djikstra(*player_room.center)
-			#print pos, '<---', self.level.player.distance(*pos)
-			x,y = pos
-			dx,dy = dj.nav(x,y)
+		else:
+			dj = self.level.get_djikstra(*self.owner.pos)
+			path = libtcod.dijkstra_path_set(dj, *self.level.player.pos)
+			x,y = libtcod.dijkstra_path_walk(dj)
+
+			if x is not None:
+				dx = x - self.owner.x
+				dy = y - self.owner.y
+			else:
+				print '!'
 
 		self.owner.move(dx,dy)
 

@@ -1,4 +1,5 @@
 from __future__ import division
+import time
 import copy
 import libtcodpy as libtcod
 import random
@@ -28,7 +29,7 @@ class AutomataEngine(object):
 			self.data = [ [ random.choice([0]+[1]*3) for y in range(height)] for x in range(width) ]
 		else:
 			self.data = [ [1 for y in range(height)] for x in range(width) ]
-		self.data = np.array(self.data)
+		#self.data = np.array(self.data)
 		self.width = width
 		self.height = height
 
@@ -37,7 +38,8 @@ class AutomataEngine(object):
 		x2,y2 = p2
 		x1,x2 = min([x1,x2]), max([x1,x2])
 		y1,y2 = min([y1,y2]), max([y1,y2])
-		result = self.data[x1:x2,y1:y2]
+		#result = self.data[x1:x2,y1:y2]
+		result = [ row[y1:y2] for row in self.data[x1:x2] ]
 		return result
 
 	def sum_area(self, p1, p2=None, summator=sum):
@@ -274,14 +276,13 @@ class NewSmoother(AutomataEngine):
 			return 1
 
 import collections
-from algorithms import djikstra
 class Map(collections.MutableSequence):
 	def __init__(self, width, height, con, level):
 		print 'hello again'
 		self.gen = MazeGen(width, height)
 		self.map = self.data = self.gen.munge()
-		self.data = Automata1(data=self.data.data).iter(2)
-		self.map = Smoother(data=self.data.data).munge()
+		#self.data = Automata1(data=self.data.data).iter(2)
+		#self.map = Smoother(data=self.data.data).munge()
 		self.data = self.map.to_map()
 
 		self.width = width
@@ -332,6 +333,8 @@ class Map(collections.MutableSequence):
 		rooms = []
 		num_rooms = 0
 
+		print '\n'.join(''.join(map(str, row)) for row in self.map.data)
+
 		for x in range(self.width):
 			for y in range(self.height):
 				if x in {0,self.width-1} or y in {0,self.height-1}:
@@ -346,55 +349,11 @@ class Map(collections.MutableSequence):
 
 		self.place_items(self.gen.rooms[0], item_types, max_num_items)
 		for r in self.gen.rooms[1:]:
-		#	pass
 			self.place_objects(r,
 				monster_types, max_num_monsters,
 				item_types, max_num_items
 			)
 
-#		for r in range(max_rooms):
-#			w = random.randrange(min_size, max_size)
-#			h = random.randrange(min_size, max_size)
-
-#			x = random.randrange(0, self.width-w-1)
-#			y = random.randrange(0, self.height-h-1)
-
-#			new_room = Rect(x,y, w,h)
-
-#			failed = any(
-#				new_room ^ other_room for other_room in rooms
-#			)
-
-#			if not failed:
-#				#self.create_room(new_room)
-#				(new_x, new_y) = new_room.random_point
-#
-#				if num_rooms == 0:
-#					x,y = new_room.random_point
-#					while self.is_blocked(x,y):
-#						x,y = new_room.random_point
-#
-#					self.map_entrance = x,y
-#
-#				else:
-#					self.place_objects(new_room,
-#						monster_types, max_num_monsters,
-#						item_types, max_num_items
-#					)
-#
-#					prev_x, prev_y = rooms[-1].center
-#					#while self.is_blocked(prev_x, prev_y):
-#					#	prev_x, prev_y = rooms[-1].random_point
-#
-#					if random.randrange(0,1) == 1:
-#						self.create_h_tunnel(prev_x, new_x, prev_y)
-#						self.create_v_tunnel(new_x, prev_y, new_y)
-#					else:
-#						self.create_v_tunnel(new_x, prev_y, new_y)
-#						self.create_h_tunnel(prev_x, new_x, prev_y)
-#
-#				rooms.append(new_room)
-#				num_rooms += 1
 		return self
 
 
@@ -428,7 +387,6 @@ class Map(collections.MutableSequence):
 		result = None,None
 		if empty_points:
 			result = random.choice(empty_points)
-			self.level.get_djikstra(*result)
 
 		return result
 

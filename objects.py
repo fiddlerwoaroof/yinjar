@@ -17,7 +17,6 @@ class Object(object):
 
 		if level is not None:
 			level.add_object(self)
-			#level.get_djikstra(x,y)
 
 		self.level = level
 

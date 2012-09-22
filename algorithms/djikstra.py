@@ -36,8 +36,7 @@ class DjikstraMap(object):
 	def load_map(self, mp):
 		self.width = len(mp)
 		self.height = len(mp[0])
-		self.max = dist( (0,0), (self.width, self.height) ) ** 2
-		self.max = int(self.max)
+		self.max = self.width*self.height
 		self.wall = self.width*self.height + 1
 		self.map = numpy.array([
 			[ [self.max,self.wall][cell] for (y,cell) in enumerate(row) ]
@@ -63,7 +62,7 @@ class DjikstraMap(object):
 			if cell == self.wall: continue
 			h = self.height
 			x,y = idx // h, idx % h
-			assert cell == self.map[x,y], "%s %s %s != %s" % (x,y, cell, self[x,y])
+			#assert cell == self.map[x,y], "%s %s %s != %s" % (x,y, cell, self[x,y])
 			yield (x,y), cell
 
 	def iter_map(self):
@@ -94,10 +93,10 @@ class DjikstraMap(object):
 
 	def get_rect(self, pos, rad):
 		x,y = pos
-		lx,ty = x-rad, y-rad
-		if x-rad < 0: lx = 0
-		if y-rad < 0: ty = 0
+		lx = max(x-rad,0)
+		ty = max(y-rad,0)
 		end = rad+1
+		#print (x,y), end, (lx, ty) ,(x+end,y+end)
 		result = self.map[lx:x+end,ty:y+end]
 		return result
 
@@ -121,14 +120,42 @@ class DjikstraMap(object):
 		return min( (g for g in self.goals), key=lambda g: dist(g,pos) )
 
 	def cycle(self):
+		goals = self.goals[:]
+		for i in range(1,max(self.width,self.height)):
+			for (x,y) in goals:
+				neighbors = self.get_rect( (x,y), i )
+				neighbors[(neighbors >= i) & (neighbors != self.wall)] = i
+		return False
+
+	def cycle1(self):
+		t0 = time.time()
 		changed = False
 		out = self.map
 		for pos, cell in self.iter_map():
 			x,y = pos
-			neighbors = numpy.min(self.get_rect(pos, 1))
-			if cell > neighbors + 1:
+
+			#print
+			neighbors = self.get_rect(pos,1)
+
+			#print pos, cell == self.max, cell==self.wall, cell == 0
+			#print neighbors
+
+			if len(neighbors[0]) == 0:
+				print 'ack'
+				continue
+			#for l in neighbors:
+			#	print (x,y), l
+			#print
+
+			min_neighbor = numpy.min(neighbors)
+
+			if cell > min_neighbor + 1:
+				self[x,y] = min_neighbor + 1
 				changed = True
-				self[x,y] = neighbors + 1
+
+			#if cell > min_neighbor + 1:
+			#	changed = True
+			#	self[x,y] = min_neighbor + 1
 
 		if changed:
 			self.iters += 1
@@ -186,19 +213,32 @@ def dist( p1, p2 ):
 if __name__ == '__main__':
 	import random
 	width, height = 199,50
-	map = [ [ random.choice([0,0,0,0,0]) for _ in range(height) ] for __ in range(width) ]
+	#map = [ [ random.choice([1,0,0,0,0]) for _ in range(height) ] for __ in range(width) ]
+	import sys
+
+	out = []
+	for line in sys.stdin:
+		out.append( [ int(x) for x in line.strip() ] )
+	map = out
+	width, height = len(map), len(map[0])
+
+
 
 	import time
-	goals = [ (random.randrange(width), random.randrange(height)) for _ in range(1) ]
+	goals = [ (random.randrange(width), random.randrange(height)) for _ in range(5) ]
 	ot = time.time()
-	for _ in range(5):
+	for _ in range(3):
 		print '\tinit'
 		t0 = time.time()
 		dj = DjikstraMap()
 		dj.set_goals(*goals)
 		dj.load_map(map)
-		dj.iter(10)
-		#while dj.cycle(): pass
+		#dj.iter(10)
+		while dj.cycle():
+			pass
+			#print 'c'
+			#dj.visualize()
+			#print
 		t = time.time() - t0
 		print '\tdone', t, 'iters', dj.iters
 	print time.time() - ot
