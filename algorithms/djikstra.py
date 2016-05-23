@@ -2,7 +2,7 @@ import random
 import copy
 
 try:
-	import numpypy as numpy
+    import numpypy as numpy
 except ImportError: pass
 import numpy
 
